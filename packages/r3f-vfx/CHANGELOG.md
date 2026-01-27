@@ -1,5 +1,11 @@
 # r3f-vfx
 
+## 0.0.6
+
+### Patch Changes
+
+- e3bf8a9: Add types
+
 ## 0.0.5
 
 ### Patch Changes
