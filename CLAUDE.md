@@ -39,10 +39,15 @@ This is a monorepo with Bun workspaces containing:
 
 ### Packages (`packages/`)
 
-- **core-vfx**: Framework-agnostic Zustand store for managing particle systems. Provides `coreStore` with methods to register, emit, start, stop, and clear particle systems by name.
+- **core-vfx**: Framework-agnostic core library containing:
+  - `coreStore` - Zustand store for managing particle systems by name
+  - Constants and enums (`Appearance`, `Blending`, `EmitterShape`, `Lighting`, etc.)
+  - Utility functions (`hexToRgb`, `toRange`, `toRotation3D`, etc.)
+  - Curve utilities (`bakeCurveToArray`, `createCombinedCurveTexture`)
+  - **Shader factories** (`createInitCompute`, `createSpawnCompute`, `createUpdateCompute`, `createParticleMaterial`) - TSL-based compute shader and material creation
 
-- **r3f-vfx**: Main React Three Fiber package (the primary deliverable). Exports:
-  - `VFXParticles` - Main particle system component with GPU compute shaders
+- **r3f-vfx**: Thin React Three Fiber wrapper around core-vfx. Exports:
+  - `VFXParticles` - Main particle system component (uses core-vfx shader factories)
   - `VFXEmitter` - Decoupled emitter that links to a named VFXParticles system
   - `useVFXEmitter` - Hook for programmatic emission control
   - `useVFXStore` - React wrapper around coreStore
@@ -60,6 +65,8 @@ This is a monorepo with Bun workspaces containing:
 2. **GPU-First Design**: Particle simulation uses Three.js TSL (Three Shading Language) nodes for WebGPU compute shaders. Import Three.js from `three/webgpu` and TSL from `three/tsl`.
 
 3. **Instanced Rendering**: Uses `instancedArray` from TSL for efficient particle data management.
+
+4. **Shader Factory Pattern**: core-vfx provides factory functions that create TSL compute shaders and materials. Framework wrappers (r3f-vfx, etc.) just call these factories with the appropriate uniforms and storage arrays, keeping framework-specific code minimal.
 
 ## Version Management
 

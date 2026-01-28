@@ -45,3 +45,19 @@ export {
   createCombinedCurveTexture,
   DEFAULT_LINEAR_CURVE,
 } from './curves';
+
+// Shader factories
+export {
+  createInitCompute,
+  createSpawnCompute,
+  createUpdateCompute,
+  createParticleMaterial,
+  selectColor,
+} from './shaders';
+
+// Shader types
+export type {
+  ParticleStorageArrays,
+  ParticleUniforms,
+  MaterialOptions,
+} from './shaders';
