@@ -1,12 +1,6 @@
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import {
-  VFXParticles,
-  Appearance,
-  Blending,
-  EmitterShape,
-  Lighting,
-} from 'r3f-vfx';
+import { VFXParticles } from '../../../packages/r3f-vfx/src/'
 import {
   TextureLoader,
   BoxGeometry,
@@ -644,91 +638,100 @@ export const Particles = () => {
   emitterHeight={[0, 1]}
   emitterDirection={[0, 1, 0]}
 /> */}
-      {/* <VFXParticles
-debug
-  maxParticles={100}
-  position={[0, 0, 0]}
-  delay={0.3}
-  intensity={4.5}
-  size={[0.01, 0.3]}
-  fadeSize={[1, 0]}
-  fadeSizeCurve={{
-    points: [
-      {
-        pos: [0, 0],
-        handleOut: [0.1, 0]
-      },
-      {
-        pos: [0.36, 1],
-        handleIn: [0, 0],
-        handleOut: [0, 0]
-      },
-      {
-        pos: [0.4666666666666667, 0.10000000000000009],
-        handleIn: [-0.032, 0],
-        handleOut: [0.032, 0]
-      },
-      {
-        pos: [0.5733333333333334, 1],
-        handleIn: [0, 0],
-        handleOut: [0, 0]
-      },
-      {
-        pos: [0.68, 0.55],
-        handleIn: [-0.032, 0],
-        handleOut: [0.032, 0]
-      },
-      {
-        pos: [0.7866666666666667, 1],
-        handleIn: [0, 0],
-        handleOut: [0, 0]
-      },
-      {
-        pos: [1, 1],
-        handleIn: [0, 0]
-      }
-    ]
-  }}
-  colorStart={["#ff0000", "#ff6600", "#ffb30f"]}
-  fadeOpacity={[1, 0]}
-  gravity={[0, 0, 0]}
-  speed={[0, 0.03]}
-  lifetime={[1, 5]}
-  friction={{
-    intensity: 0.1,
-    easing: "easeOut"
-  }}
-  velocityCurve={{
-    points: [
-      {
-        pos: [0, 0],
-        handleOut: [0.33, 0]
-      },
-      {
-        pos: [0.674971923828125, 0],
-        handleIn: [-0.1, 0],
-        handleOut: [0.1, 0]
-      },
-      {
-        pos: [1, 1],
-        handleIn: [-0.33, 0]
-      }
-    ]
-  }}
-  direction={[[-1, 1], [-1, 1], [-1, 1]]}
-  startPosition={[[0, 0], [0, 0], [0, 0]]}
-  rotation={[0, 0]}
-  rotationSpeed={[0, 0]}
-  orientToDirection={true}
-  appearance="default"
-  blending={2}
-  lighting="basic"
-  emitterShape={2}
-  emitterRadius={[0.95, 1]}
-  emitterAngle={0.7853981633974483}
-  emitterHeight={[0, 1]}
-  emitterDirection={[0, 1, 0]}
-/> */}
+      {/* Curve Baking Demo - Shows fadeSizeCurve and velocityCurve features */}
+      <VFXParticles
+        debug
+        maxParticles={100}
+        position={[3, 1, 0]}
+        delay={0.3}
+        intensity={4.5}
+        size={[0.01, 0.3]}
+        fadeSize={[1, 0]}
+        fadeSizeCurve={{
+          points: [
+            {
+              pos: [0, 0],
+              handleOut: [0.1, 0],
+            },
+            {
+              pos: [0.36, 1],
+              handleIn: [0, 0],
+              handleOut: [0, 0],
+            },
+            {
+              pos: [0.4666666666666667, 0.10000000000000009],
+              handleIn: [-0.032, 0],
+              handleOut: [0.032, 0],
+            },
+            {
+              pos: [0.5733333333333334, 1],
+              handleIn: [0, 0],
+              handleOut: [0, 0],
+            },
+            {
+              pos: [0.68, 0.55],
+              handleIn: [-0.032, 0],
+              handleOut: [0.032, 0],
+            },
+            {
+              pos: [0.7866666666666667, 1],
+              handleIn: [0, 0],
+              handleOut: [0, 0],
+            },
+            {
+              pos: [1, 1],
+              handleIn: [0, 0],
+            },
+          ],
+        }}
+        colorStart={['#ff0000', '#ff6600', '#ffb30f']}
+        fadeOpacity={[1, 0]}
+        gravity={[0, 0, 0]}
+        speed={[0, 0.03]}
+        lifetime={[1, 5]}
+        friction={{
+          intensity: 0.1,
+          easing: 'easeOut',
+        }}
+        velocityCurve={{
+          points: [
+            {
+              pos: [0, 0],
+              handleOut: [0.33, 0],
+            },
+            {
+              pos: [0.674971923828125, 0],
+              handleIn: [-0.1, 0],
+              handleOut: [0.1, 0],
+            },
+            {
+              pos: [1, 1],
+              handleIn: [-0.33, 0],
+            },
+          ],
+        }}
+        direction={[
+          [-1, 1],
+          [-1, 1],
+          [-1, 1],
+        ]}
+        startPosition={[
+          [0, 0],
+          [0, 0],
+          [0, 0],
+        ]}
+        rotation={[0, 0]}
+        rotationSpeed={[0, 0]}
+        orientToDirection={true}
+        appearance="default"
+        blending={2}
+        lighting="basic"
+        emitterShape={2}
+        emitterRadius={[0.95, 1]}
+        emitterAngle={0.7853981633974483}
+        emitterHeight={[0, 1]}
+        emitterDirection={[0, 1, 0]}
+      />
       {/* <VFXParticles
         // debug={true}
         autoStart={true}
@@ -1018,7 +1021,7 @@ debug
         //   speed: 0.5
         // }}
       /> */}
-      {/* 
+      {/*
       <VFXParticles
         autoStart={true}
         maxParticles={300}

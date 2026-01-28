@@ -1,6 +1,5 @@
 {
   "lockfileVersion": 1,
-  "configVersion": 1,
   "workspaces": {
     "": {
       "name": "root",
@@ -15,7 +14,7 @@
       "dependencies": {
         "@react-three/drei": "10.7.7",
         "@react-three/fiber": "9.5.0",
-        "r3f-vfx": "0.0.4",
+        "r3f-vfx": "^0.0.9",
         "react": "19.2.3",
         "react-dom": "19.2.3",
         "three": "0.182.0",
@@ -32,7 +31,7 @@
     },
     "packages/core-vfx": {
       "name": "core-vfx",
-      "version": "0.0.2",
+      "version": "0.0.3",
       "dependencies": {
         "zustand": "5.0.10",
       },
@@ -48,9 +47,9 @@
     },
     "packages/r3f-vfx": {
       "name": "r3f-vfx",
-      "version": "0.0.6",
+      "version": "0.0.9",
       "dependencies": {
-        "core-vfx": "0.0.1",
+        "core-vfx": "0.0.3",
         "zustand": "5.0.10",
       },
       "devDependencies": {
@@ -70,7 +69,7 @@
     },
     "packages/threlte-vfx": {
       "name": "threlte-vfx",
-      "version": "0.0.2",
+      "version": "0.0.3",
       "dependencies": {
         "core-vfx": "0.0.0",
       },
@@ -81,7 +80,7 @@
     },
     "packages/tres-vfx": {
       "name": "tres-vfx",
-      "version": "0.0.2",
+      "version": "0.0.3",
       "dependencies": {
         "core-vfx": "0.0.0",
       },
@@ -92,7 +91,7 @@
     },
     "packages/vanilla-vfx": {
       "name": "vanilla-vfx",
-      "version": "0.0.2",
+      "version": "0.0.3",
       "dependencies": {
         "core-vfx": "0.0.0",
         "zustand": "5.0.10",

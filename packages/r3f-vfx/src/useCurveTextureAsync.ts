@@ -6,9 +6,6 @@ import {
   CURVE_RESOLUTION,
   type CurveData,
 } from 'core-vfx';
-// @ts-expect-error - Vite worker import
-import CurveWorker from './curveWorker.js?worker';
-
 // Singleton worker for curve baking (shared across all VFXParticles instances)
 let curveWorker: Worker | null = null;
 let curveWorkerCallbacks = new Map<number, (rgba: Float32Array) => void>();
@@ -16,8 +13,13 @@ let curveWorkerIdCounter = 0;
 
 const getCurveWorker = (): Worker => {
   if (!curveWorker) {
-    curveWorker = new CurveWorker();
-    curveWorker.onmessage = (e: MessageEvent<{ id: number; rgba: Float32Array }>) => {
+    // Use new Worker with URL constructor - works with both Vite and bundlers
+    curveWorker = new Worker(new URL('./curveWorker.js', import.meta.url), {
+      type: 'module',
+    });
+    curveWorker.onmessage = (
+      e: MessageEvent<{ id: number; rgba: Float32Array }>
+    ) => {
       const { id, rgba } = e.data;
       const callback = curveWorkerCallbacks.get(id);
       if (callback) {
@@ -26,7 +28,7 @@ const getCurveWorker = (): Worker => {
       }
     };
   }
-  return curveWorker;
+  return curveWorker!;
 };
 
 // Request curve baking from worker, returns a promise
@@ -57,7 +59,7 @@ const bakeCurvesAsync = (
  * If curveTexturePath is provided, loads pre-baked texture (fast)
  * If curves are defined, bakes them in web worker
  * If no curves AND no path, returns default texture (no baking, instant)
- * 
+ *
  * The 4KB default texture is always created for shader compatibility,
  * but baking is skipped when not needed (main performance win).
  */
@@ -82,30 +84,46 @@ export const useCurveTextureAsync = (
 
     // Skip baking entirely if no curves are defined and no texture path
     // The default texture already has correct linear 1→0 fallback values
-    const hasAnyCurve = sizeCurve || opacityCurve || velocityCurve || rotationSpeedCurve;
-    
+    const hasAnyCurve =
+      sizeCurve || opacityCurve || velocityCurve || rotationSpeedCurve;
+
     if (curveTexturePath) {
       // Load pre-baked texture from .bin file (fast path, full float precision)
-      loadCurveTextureFromPath(curveTexturePath, textureRef.current!)
-        .catch((err) => {
+      loadCurveTextureFromPath(curveTexturePath, textureRef.current!).catch(
+        (err) => {
           console.warn(
             `Failed to load curve texture: ${curveTexturePath}, falling back to baking`,
             err
           );
           // Fallback to baking if load fails
-          return bakeCurvesAsync(sizeCurve, opacityCurve, velocityCurve, rotationSpeedCurve).then(
-            (rgba) => {
-              if (pendingRef.current === requestId && textureRef.current) {
-                textureRef.current.image.data.set(rgba);
-                textureRef.current.needsUpdate = true;
-              }
+          return bakeCurvesAsync(
+            sizeCurve,
+            opacityCurve,
+            velocityCurve,
+            rotationSpeedCurve
+          ).then((rgba) => {
+            if (
+              pendingRef.current === requestId &&
+              textureRef.current?.image.data
+            ) {
+              textureRef.current.image.data.set(rgba);
+              textureRef.current.needsUpdate = true;
             }
-          );
-        });
+          });
+        }
+      );
     } else if (hasAnyCurve) {
       // Only bake if at least one curve is defined
-      bakeCurvesAsync(sizeCurve, opacityCurve, velocityCurve, rotationSpeedCurve).then((rgba) => {
-        if (pendingRef.current === requestId && textureRef.current) {
+      bakeCurvesAsync(
+        sizeCurve,
+        opacityCurve,
+        velocityCurve,
+        rotationSpeedCurve
+      ).then((rgba) => {
+        if (
+          pendingRef.current === requestId &&
+          textureRef.current?.image.data
+        ) {
           textureRef.current.image.data.set(rgba);
           textureRef.current.needsUpdate = true;
         }
@@ -116,7 +134,13 @@ export const useCurveTextureAsync = (
     return () => {
       pendingRef.current = null;
     };
-  }, [sizeCurve, opacityCurve, velocityCurve, rotationSpeedCurve, curveTexturePath]);
+  }, [
+    sizeCurve,
+    opacityCurve,
+    velocityCurve,
+    rotationSpeedCurve,
+    curveTexturePath,
+  ]);
 
   // Cleanup on unmount
   useEffect(() => {
