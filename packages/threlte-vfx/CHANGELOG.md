@@ -1,5 +1,13 @@
 # threlte-vfx
 
+## 0.0.4
+
+### Patch Changes
+
+- updated packages
+- Updated dependencies
+  - core-vfx@0.0.4
+
 ## 0.0.3
 
 ### Patch Changes

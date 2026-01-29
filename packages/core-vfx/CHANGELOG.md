@@ -1,5 +1,11 @@
 # core-vfx
 
+## 0.0.4
+
+### Patch Changes
+
+- updated packages
+
 ## 0.0.3
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # r3f-vfx
 
+## 0.1.1
+
+### Patch Changes
+
+- updated packages
+- Updated dependencies
+  - core-vfx@0.0.4
+
 ## 0.1.0
 
 ### Minor Changes
