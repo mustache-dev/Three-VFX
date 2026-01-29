@@ -1,5 +1,11 @@
 # r3f-vfx
 
+## 0.1.0
+
+### Minor Changes
+
+- d7d4501: feature : bake texture to save compute
+
 ## 0.0.9
 
 ### Patch Changes
