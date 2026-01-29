@@ -22,8 +22,7 @@
     "format": "prettier . --write",
     "changeset:add": "changeset",
     "changeset:version": "changeset version",
-    "changeset:publish": "changeset publish",
-    "pub": "run-s build changeset:publish"
+    "pub": "bun run build && changeset publish"
   },
   "devDependencies": {
     "@changesets/cli": "2.29.8",
