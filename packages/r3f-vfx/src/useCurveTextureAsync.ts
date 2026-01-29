@@ -22,17 +22,29 @@ export const useCurveTextureAsync = (
   rotationSpeedCurve: CurveData | null,
   curveTexturePath: string | null = null
 ): THREE.DataTexture => {
-  const textureRef = useRef<THREE.DataTexture | null>(null)
-
-  // Create default texture once (4KB, instant, has correct linear 1→0 fallback)
-  if (!textureRef.current) {
-    textureRef.current = createDefaultCurveTexture()
-  }
-
-  // Synchronously bake curves when they change (no worker needed)
   const hasAnyCurve =
     sizeCurve || opacityCurve || velocityCurve || rotationSpeedCurve
 
+  // Create texture with baked curve data synchronously during render.
+  // This ensures the texture has the correct data before downstream useMemo
+  // hooks (createUpdateCompute, createParticleMaterial) consume it.
+  const textureRef = useRef<THREE.DataTexture | null>(null)
+  if (!textureRef.current) {
+    if (!curveTexturePath && hasAnyCurve) {
+      // Bake curves directly into the initial texture
+      textureRef.current = createCombinedCurveTexture(
+        sizeCurve as CurveData,
+        opacityCurve as CurveData,
+        velocityCurve as CurveData,
+        rotationSpeedCurve as CurveData
+      )
+    } else {
+      // Default linear 1→0 fallback (curveTexturePath will update it async)
+      textureRef.current = createDefaultCurveTexture()
+    }
+  }
+
+  // Re-bake synchronously when curve props change after initial mount
   useMemo(() => {
     if (!curveTexturePath && hasAnyCurve && textureRef.current) {
       const bakedTexture = createCombinedCurveTexture(
@@ -49,43 +61,36 @@ export const useCurveTextureAsync = (
       }
       bakedTexture.dispose()
     }
-  }, [
-    sizeCurve,
-    opacityCurve,
-    velocityCurve,
-    rotationSpeedCurve,
-    curveTexturePath,
-    hasAnyCurve,
-  ])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sizeCurve, opacityCurve, velocityCurve, rotationSpeedCurve])
 
-  // Load pre-baked texture from path (async fetch, but no worker)
+  // Load pre-baked texture from path (requires async fetch)
   useEffect(() => {
-    if (curveTexturePath && textureRef.current) {
-      loadCurveTextureFromPath(curveTexturePath, textureRef.current).catch(
-        (err) => {
-          console.warn(
-            `Failed to load curve texture: ${curveTexturePath}, falling back to baking`,
-            err
+    if (!curveTexturePath || !textureRef.current) return
+
+    loadCurveTextureFromPath(curveTexturePath, textureRef.current).catch(
+      (err) => {
+        console.warn(
+          `Failed to load curve texture: ${curveTexturePath}, falling back to baking`,
+          err
+        )
+        if (hasAnyCurve && textureRef.current) {
+          const bakedTexture = createCombinedCurveTexture(
+            sizeCurve as CurveData,
+            opacityCurve as CurveData,
+            velocityCurve as CurveData,
+            rotationSpeedCurve as CurveData
           )
-          // Fallback to synchronous baking if load fails
-          if (hasAnyCurve && textureRef.current) {
-            const bakedTexture = createCombinedCurveTexture(
-              sizeCurve as CurveData,
-              opacityCurve as CurveData,
-              velocityCurve as CurveData,
-              rotationSpeedCurve as CurveData
-            )
-            const srcData = bakedTexture.image.data as Float32Array | null
-            const dstData = textureRef.current.image.data as Float32Array | null
-            if (srcData && dstData) {
-              dstData.set(srcData)
-              textureRef.current.needsUpdate = true
-            }
-            bakedTexture.dispose()
+          const srcData = bakedTexture.image.data as Float32Array | null
+          const dstData = textureRef.current.image.data as Float32Array | null
+          if (srcData && dstData) {
+            dstData.set(srcData)
+            textureRef.current.needsUpdate = true
           }
+          bakedTexture.dispose()
         }
-      )
-    }
+      }
+    )
   }, [
     curveTexturePath,
     sizeCurve,
