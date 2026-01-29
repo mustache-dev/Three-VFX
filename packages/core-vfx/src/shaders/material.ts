@@ -23,7 +23,11 @@ import {
 } from 'three/tsl';
 import { Appearance, Lighting } from '../constants';
 import type { Node } from 'three/webgpu';
-import type { ParticleStorageArrays, ParticleUniforms, MaterialOptions } from './types';
+import type {
+  ParticleStorageArrays,
+  ParticleUniforms,
+  MaterialOptions,
+} from './types';
 
 /**
  * Creates the particle material (either SpriteNodeMaterial or MeshNodeMaterial).
@@ -34,7 +38,11 @@ export const createParticleMaterial = (
   uniforms: ParticleUniforms,
   curveTexture: THREE.DataTexture,
   options: MaterialOptions
-): THREE.SpriteNodeMaterial | THREE.MeshBasicNodeMaterial | THREE.MeshStandardNodeMaterial | THREE.MeshPhysicalNodeMaterial => {
+):
+  | THREE.SpriteNodeMaterial
+  | THREE.MeshBasicNodeMaterial
+  | THREE.MeshStandardNodeMaterial
+  | THREE.MeshPhysicalNodeMaterial => {
   const {
     alphaMap,
     flipbook,
@@ -53,15 +61,22 @@ export const createParticleMaterial = (
 
   const lifetime = storage.lifetimes.element(instanceIndex);
   const particleSize = storage.particleSizes.element(instanceIndex);
-  const particleRotation = storage.particleRotations.element(instanceIndex);
-  const pColorStart = storage.particleColorStarts.element(instanceIndex);
-  const pColorEnd = storage.particleColorEnds.element(instanceIndex);
+  // Optional arrays (null when feature unused) - use defaults
+  const particleRotation =
+    storage.particleRotations?.element(instanceIndex) ?? vec3(0, 0, 0);
+  const pColorStart = storage.particleColorStarts?.element(instanceIndex);
+  const pColorEnd = storage.particleColorEnds?.element(instanceIndex);
   const particlePos = storage.positions.element(instanceIndex);
   const particleVel = storage.velocities.element(instanceIndex);
 
   const progress = float(1).sub(lifetime);
 
-  const currentColor = mix(pColorStart, pColorEnd, progress);
+  // If per-particle colors exist, interpolate between them
+  // Otherwise, use uniform colors (single color, no per-particle variation)
+  const currentColor =
+    pColorStart && pColorEnd
+      ? mix(pColorStart, pColorEnd, progress)
+      : mix(uniforms.colorStart0, uniforms.colorEnd0, progress);
   const intensifiedColor = currentColor.mul(uniforms.intensity);
 
   // Sample combined curve texture (R=size, G=opacity, B=velocity, A=rotSpeed)
@@ -91,9 +106,7 @@ export const createParticleMaterial = (
     const columns = float(flipbook.columns || 1);
     const totalFrames = rows.mul(columns);
 
-    const frameIndex = floor(
-      progress.mul(totalFrames).min(totalFrames.sub(1))
-    );
+    const frameIndex = floor(progress.mul(totalFrames).min(totalFrames.sub(1)));
 
     const col = mod(frameIndex, columns);
     const row = floor(frameIndex.div(columns));
@@ -141,8 +154,8 @@ export const createParticleMaterial = (
     velocity: particleVel,
     size: particleSize,
     rotation: particleRotation,
-    colorStart: pColorStart,
-    colorEnd: pColorEnd,
+    ...(pColorStart && { colorStart: pColorStart }),
+    ...(pColorEnd && { colorEnd: pColorEnd }),
     color: currentColor,
     intensifiedColor,
     shapeMask,
@@ -175,7 +188,10 @@ export const createParticleMaterial = (
 
   if (geometry) {
     // InstancedMesh mode with custom geometry
-    let mat: THREE.MeshBasicNodeMaterial | THREE.MeshStandardNodeMaterial | THREE.MeshPhysicalNodeMaterial;
+    let mat:
+      | THREE.MeshBasicNodeMaterial
+      | THREE.MeshStandardNodeMaterial
+      | THREE.MeshPhysicalNodeMaterial;
     switch (lighting) {
       case Lighting.BASIC:
         mat = new THREE.MeshBasicNodeMaterial();
@@ -216,28 +232,34 @@ export const createParticleMaterial = (
     const axisIndex = axisType.mod(3);
 
     // Apply stretch along the chosen LOCAL axis BEFORE rotation
-    const stretchedLocal = uniforms.stretchEnabled.greaterThan(0.5).select(
-      axisIndex.lessThan(0.5).select(
-        vec3(
-          positionLocal.x.mul(stretchAmount),
-          positionLocal.y,
-          positionLocal.z
-        ),
-        axisIndex.lessThan(1.5).select(
-          vec3(
-            positionLocal.x,
-            positionLocal.y.mul(stretchAmount),
-            positionLocal.z
+    const stretchedLocal = uniforms.stretchEnabled
+      .greaterThan(0.5)
+      .select(
+        axisIndex
+          .lessThan(0.5)
+          .select(
+            vec3(
+              positionLocal.x.mul(stretchAmount),
+              positionLocal.y,
+              positionLocal.z
+            ),
+            axisIndex
+              .lessThan(1.5)
+              .select(
+                vec3(
+                  positionLocal.x,
+                  positionLocal.y.mul(stretchAmount),
+                  positionLocal.z
+                ),
+                vec3(
+                  positionLocal.x,
+                  positionLocal.y,
+                  positionLocal.z.mul(stretchAmount)
+                )
+              )
           ),
-          vec3(
-            positionLocal.x,
-            positionLocal.y,
-            positionLocal.z.mul(stretchAmount)
-          )
-        )
-      ),
-      positionLocal
-    );
+        positionLocal
+      );
 
     let rotatedPos: Node;
 
@@ -247,13 +269,12 @@ export const createParticleMaterial = (
       const velDir = particleVel.div(velLen).mul(axisSign);
 
       // Get the local axis we want to align with velocity
-      const localAxis = axisIndex.lessThan(0.5).select(
-        vec3(1, 0, 0),
-        axisIndex.lessThan(1.5).select(
-          vec3(0, 1, 0),
-          vec3(0, 0, 1)
-        )
-      );
+      const localAxis = axisIndex
+        .lessThan(0.5)
+        .select(
+          vec3(1, 0, 0),
+          axisIndex.lessThan(1.5).select(vec3(0, 1, 0), vec3(0, 0, 1))
+        );
 
       // Rodrigues' rotation formula
       const dotProduct = localAxis.dot(velDir).clamp(-1, 1);
@@ -279,10 +300,7 @@ export const createParticleMaterial = (
           .mul(cosAngleVal)
           .add(kCrossV.mul(sinAngleVal))
           .add(rotAxis.mul(kDotV.mul(oneMinusCos))),
-        dotProduct.lessThan(-0.99).select(
-          v.negate(),
-          v
-        )
+        dotProduct.lessThan(-0.99).select(v.negate(), v)
       );
 
       rotatedPos = rotatedByAxis;

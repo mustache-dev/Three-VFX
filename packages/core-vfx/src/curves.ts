@@ -13,8 +13,14 @@ export const evaluateBezierSegment = (
   // p0 = start point [x, y], p1 = end point [x, y]
   // h0Out = handle out from p0 (offset), h1In = handle in to p1 (offset)
   const cp0 = p0;
-  const cp1: [number, number] = [p0[0] + (h0Out?.[0] || 0), p0[1] + (h0Out?.[1] || 0)];
-  const cp2: [number, number] = [p1[0] + (h1In?.[0] || 0), p1[1] + (h1In?.[1] || 0)];
+  const cp1: [number, number] = [
+    p0[0] + (h0Out?.[0] || 0),
+    p0[1] + (h0Out?.[1] || 0),
+  ];
+  const cp2: [number, number] = [
+    p1[0] + (h1In?.[0] || 0),
+    p1[1] + (h1In?.[1] || 0),
+  ];
   const cp3 = p1;
 
   const mt = 1 - t;
@@ -90,7 +96,10 @@ export const sampleCurveAtX = (x: number, points: CurvePoint[]): number => {
 };
 
 // Bake a curve to a Float32Array for use in DataTexture
-export const bakeCurveToArray = (curveData: CurveData, resolution = CURVE_RESOLUTION): Float32Array => {
+export const bakeCurveToArray = (
+  curveData: CurveData,
+  resolution = CURVE_RESOLUTION
+): Float32Array => {
   const data = new Float32Array(resolution);
 
   // Validate curve data structure
@@ -169,7 +178,78 @@ export const createCombinedCurveTexture = (
 // Curve Y-value is the DIRECT multiplier: y=1 means full, y=0 means none
 export const DEFAULT_LINEAR_CURVE = {
   points: [
-    { pos: [0, 1] as [number, number], handleOut: [0.33, 0] as [number, number] },
-    { pos: [1, 0] as [number, number], handleIn: [-0.33, 0] as [number, number] },
+    {
+      pos: [0, 1] as [number, number],
+      handleOut: [0.33, 0] as [number, number],
+    },
+    {
+      pos: [1, 0] as [number, number],
+      handleIn: [-0.33, 0] as [number, number],
+    },
   ],
+};
+
+// Create a default linear texture (1→0 fade) for immediate use
+export const createDefaultCurveTexture = (): THREE.DataTexture => {
+  const rgba = new Float32Array(CURVE_RESOLUTION * 4);
+  for (let i = 0; i < CURVE_RESOLUTION; i++) {
+    const value = 1 - i / (CURVE_RESOLUTION - 1);
+    rgba[i * 4] = value; // R - size
+    rgba[i * 4 + 1] = value; // G - opacity
+    rgba[i * 4 + 2] = value; // B - velocity
+    rgba[i * 4 + 3] = value; // A - rotation speed
+  }
+  const tex = new THREE.DataTexture(
+    rgba,
+    CURVE_RESOLUTION,
+    1,
+    THREE.RGBAFormat,
+    THREE.FloatType
+  );
+  tex.minFilter = THREE.LinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.wrapS = THREE.ClampToEdgeWrapping;
+  tex.needsUpdate = true;
+  return tex;
+};
+
+// Load a pre-baked curve texture from a binary file
+export const loadCurveTextureFromPath = async (
+  path: string,
+  existingTexture?: THREE.DataTexture
+): Promise<THREE.DataTexture> => {
+  const response = await fetch(path);
+  if (!response.ok) {
+    throw new Error(`Failed to load curve texture: HTTP ${response.status}`);
+  }
+
+  const buffer = await response.arrayBuffer();
+  const rgba = new Float32Array(buffer);
+
+  if (rgba.length !== CURVE_RESOLUTION * 4) {
+    throw new Error(
+      `Invalid curve texture size: expected ${CURVE_RESOLUTION * 4}, got ${rgba.length}`
+    );
+  }
+
+  // If existing texture provided, update it in place (avoids shader recompilation)
+  if (existingTexture && existingTexture.image.data) {
+    existingTexture.image.data.set(rgba);
+    existingTexture.needsUpdate = true;
+    return existingTexture;
+  }
+
+  // Create new texture
+  const tex = new THREE.DataTexture(
+    rgba,
+    CURVE_RESOLUTION,
+    1,
+    THREE.RGBAFormat,
+    THREE.FloatType
+  );
+  tex.minFilter = THREE.LinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.wrapS = THREE.ClampToEdgeWrapping;
+  tex.needsUpdate = true;
+  return tex;
 };
