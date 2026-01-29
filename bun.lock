@@ -44,7 +44,7 @@
     },
     "packages/core-vfx": {
       "name": "core-vfx",
-      "version": "0.0.6",
+      "version": "0.0.7",
       "dependencies": {
         "zustand": "5.0.10",
       },
@@ -62,17 +62,17 @@
       "name": "debug-vfx",
       "version": "0.0.6",
       "dependencies": {
-        "core-vfx": "0.0.6",
-        "react": "19.1.0",
-        "react-dom": "19.1.0",
-        "zustand": "5.0.10",
+        "core-vfx": "0.0.7",
       },
       "devDependencies": {
         "@types/react": "19.2.10",
         "@types/three": "0.182.0",
+        "react": "19.1.0",
+        "react-dom": "19.1.0",
         "three": "0.182.0",
         "tsup": "8.5.1",
         "typescript": "5.9.3",
+        "zustand": "5.0.10",
       },
       "peerDependencies": {
         "three": ">=0.182.0",
@@ -80,7 +80,7 @@
     },
     "packages/r3f-vfx": {
       "name": "r3f-vfx",
-      "version": "0.1.3",
+      "version": "0.1.5",
       "dependencies": {
         "core-vfx": "0.0.6",
         "debug-vfx": "0.0.6",
@@ -103,7 +103,7 @@
     },
     "packages/threlte-vfx": {
       "name": "threlte-vfx",
-      "version": "0.0.6",
+      "version": "0.0.7",
       "dependencies": {
         "core-vfx": "0.0.0",
       },
@@ -114,7 +114,7 @@
     },
     "packages/tres-vfx": {
       "name": "tres-vfx",
-      "version": "0.0.6",
+      "version": "0.0.7",
       "dependencies": {
         "core-vfx": "0.0.0",
       },
@@ -125,7 +125,7 @@
     },
     "packages/vanilla-vfx": {
       "name": "vanilla-vfx",
-      "version": "0.0.6",
+      "version": "0.0.7",
       "dependencies": {
         "core-vfx": "0.0.0",
         "zustand": "5.0.10",
