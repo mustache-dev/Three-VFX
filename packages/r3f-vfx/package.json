@@ -1,6 +1,6 @@
 {
   "name": "r3f-vfx",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "license": "MIT",
   "type": "module",
   "repository": {
@@ -24,8 +24,8 @@
     "prepublishOnly": "bun run copy-readme"
   },
   "dependencies": {
-    "core-vfx": "0.0.7",
-    "debug-vfx": "0.0.7",
+    "core-vfx": "0.0.8",
+    "debug-vfx": "0.0.8",
     "zustand": "5.0.10"
   },
   "devDependencies": {

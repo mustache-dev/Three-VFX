@@ -1,5 +1,14 @@
 # r3f-vfx
 
+## 0.1.7
+
+### Patch Changes
+
+- emit function can now overrides emitterShape properties
+- Updated dependencies
+  - core-vfx@0.0.8
+  - debug-vfx@0.0.8
+
 ## 0.1.6
 
 ### Patch Changes
