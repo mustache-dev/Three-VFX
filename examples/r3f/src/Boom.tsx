@@ -89,7 +89,7 @@ export const Boom = () => {
       emit([0, 0, 0], 100)
       for (let i = 0; i < 5; i++) {
         const angle = (Math.PI * 2 * i) / 5
-        vectors[i].set(0, -.5, 0)
+        vectors[i].set(0, -0.5, 0)
         velocities[i].set(
           Math.cos(angle) * outSpeed,
           upSpeed,

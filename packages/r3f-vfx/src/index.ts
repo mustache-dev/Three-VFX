@@ -34,4 +34,15 @@ export type {
   FlipbookConfig,
   StretchConfig,
   BaseParticleProps,
+  NormalizedParticleProps,
+  VFXParticleSystemOptions,
+  EmitterControllerOptions,
+} from 'core-vfx'
+
+// Re-export core classes for direct usage
+export {
+  VFXParticleSystem,
+  EmitterController,
+  isNonDefaultRotation,
+  normalizeProps,
 } from 'core-vfx'
