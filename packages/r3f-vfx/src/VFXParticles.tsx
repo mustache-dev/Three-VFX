@@ -1981,7 +1981,6 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
       })
     }, [debug, handleDebugUpdate])
 
-    // @ts-expect-error R3F primitive element
     return <primitive ref={spriteRef} object={renderObject} />
   }
 )
