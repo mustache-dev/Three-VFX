@@ -10,9 +10,9 @@ import {
 import { useFrame } from '@react-three/fiber'
 import { Vector3, Quaternion, Group } from 'three/webgpu'
 import { useVFXStore } from './react-store'
-import { EmitterController } from 'core-vfx'
+import { EmitterController, type EmitterControllerOptions } from 'core-vfx'
 
-export interface VFXEmitterProps {
+export interface VFXEmitterProps extends EmitterControllerOptions {
   /** Name of the registered VFXParticles system */
   name?: string
   /** Direct ref to VFXParticles (alternative to name) */
@@ -20,28 +20,6 @@ export interface VFXEmitterProps {
   particlesRef?: RefObject<any> | any
   /** Local position offset */
   position?: [number, number, number]
-  /** Particles to emit per burst */
-  emitCount?: number
-  /** Seconds between emissions (0 = every frame) */
-  delay?: number
-  /** Start emitting automatically */
-  autoStart?: boolean
-  /** Keep emitting (false = emit once) */
-  loop?: boolean
-  /** Transform direction by parent's world rotation */
-  localDirection?: boolean
-  /** Direction override [[minX,maxX],[minY,maxY],[minZ,maxZ]] */
-  direction?: [[number, number], [number, number], [number, number]]
-  /** Per-spawn overrides (size, speed, colors, etc.) */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  overrides?: Record<string, any> | null
-  /** Callback fired after each emission */
-  onEmit?: (params: {
-    position: [number, number, number] | number[]
-    count: number
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    direction: any
-  }) => void
   /** Children elements */
   children?: ReactNode
 }
