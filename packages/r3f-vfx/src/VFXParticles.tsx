@@ -10,7 +10,6 @@ import {
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three/webgpu'
 import { useVFXStore } from './react-store'
-import { useCurveTextureAsync } from './useCurveTextureAsync'
 import {
   Appearance,
   Blending,
@@ -21,7 +20,6 @@ import {
   normalizeProps,
   updateUniforms,
   updateUniformsPartial,
-  updateUniformsCurveFlags,
   resolveFeatures,
   type VFXParticleSystemOptions,
 } from 'core-vfx'
@@ -198,21 +196,6 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
       collision,
     ])
 
-    // Curve texture (React-specific hook)
-    const {
-      texture: curveTexture,
-      sizeEnabled: curveTextureSizeEnabled,
-      opacityEnabled: curveTextureOpacityEnabled,
-      velocityEnabled: curveTextureVelocityEnabled,
-      rotationSpeedEnabled: curveTextureRotationSpeedEnabled,
-    } = useCurveTextureAsync(
-      activeFadeSizeCurve,
-      activeFadeOpacityCurve,
-      activeVelocityCurve,
-      activeRotationSpeedCurve,
-      curveTexturePath
-    )
-
     // Create/recreate system when structural props change
     const system = useMemo(
       () =>
@@ -272,13 +255,7 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
             castShadowNode,
             depthTest,
             renderOrder,
-          },
-          curveTexture,
-          {
-            sizeEnabled: curveTextureSizeEnabled,
-            opacityEnabled: curveTextureOpacityEnabled,
-            velocityEnabled: curveTextureVelocityEnabled,
-            rotationSpeedEnabled: curveTextureRotationSpeedEnabled,
+            curveTexturePath,
           }
         ),
       // Only recreate when structural props change (features, maxParticles, etc.)
@@ -296,7 +273,10 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
         activeTurbulence,
         activeAttractors,
         activeCollision,
-        curveTexture,
+        activeFadeSizeCurve,
+        activeFadeOpacityCurve,
+        activeVelocityCurve,
+        activeRotationSpeedCurve,
         alphaMap,
         flipbook,
         blending,
@@ -306,6 +286,7 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
         alphaTestNode,
         castShadowNode,
         softParticles,
+        curveTexturePath,
       ]
     )
 
@@ -355,12 +336,6 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
         stretchBySpeed,
       })
       updateUniforms(system.uniforms, normalized)
-      updateUniformsCurveFlags(system.uniforms, {
-        fadeSizeCurveEnabled: curveTextureSizeEnabled,
-        fadeOpacityCurveEnabled: curveTextureOpacityEnabled,
-        velocityCurveEnabled: curveTextureVelocityEnabled,
-        rotationSpeedCurveEnabled: curveTextureRotationSpeedEnabled,
-      })
     }, [
       debug,
       system,
@@ -392,10 +367,6 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
       startPositionAsDirection,
       softParticles,
       softDistance,
-      curveTextureVelocityEnabled,
-      curveTextureRotationSpeedEnabled,
-      curveTextureSizeEnabled,
-      curveTextureOpacityEnabled,
       orientAxis,
       stretchBySpeed,
       delay,

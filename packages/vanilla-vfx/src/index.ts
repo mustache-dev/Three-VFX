@@ -27,5 +27,7 @@ export type {
   EmitterControllerOptions,
 } from 'core-vfx'
 
-// Re-export classes for advanced usage
-export { VFXParticleSystem, EmitterController } from 'core-vfx'
+// Re-export classes and curve utilities for advanced usage
+export { VFXParticleSystem, EmitterController, resolveCurveTexture } from 'core-vfx'
+
+export type { CurveTextureResolved } from 'core-vfx'

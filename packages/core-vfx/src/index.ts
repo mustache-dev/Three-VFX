@@ -51,11 +51,12 @@ export {
   createDefaultCurveTexture,
   loadCurveTextureFromPath,
   buildCurveTextureBin,
+  resolveCurveTexture,
   CurveChannel,
   DEFAULT_LINEAR_CURVE,
 } from './curves'
 
-export type { CurveTextureResult } from './curves'
+export type { CurveTextureResult, CurveTextureResolved } from './curves'
 
 // Shader factories
 export {

@@ -22,7 +22,12 @@ import {
   createUpdateCompute,
   createParticleMaterial,
 } from './shaders'
-import { createCombinedCurveTexture, createDefaultCurveTexture } from './curves'
+import {
+  createCombinedCurveTexture,
+  createDefaultCurveTexture,
+  loadCurveTextureFromPath,
+  CurveChannel,
+} from './curves'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type UniformAccessor = Record<string, { value: any }>
@@ -55,14 +60,7 @@ export class VFXParticleSystem {
 
   constructor(
     renderer: THREE.WebGPURenderer,
-    options: VFXParticleSystemOptions,
-    curveTexture?: THREE.DataTexture,
-    curveTextureChannels?: {
-      sizeEnabled: boolean
-      opacityEnabled: boolean
-      velocityEnabled: boolean
-      rotationSpeedEnabled: boolean
-    }
+    options: VFXParticleSystemOptions
   ) {
     this._renderer = renderer
     this.options = options
@@ -89,10 +87,8 @@ export class VFXParticleSystem {
     // Create storage arrays
     this.storage = createStorageArrays(np.maxParticles, this.features)
 
-    // Handle curve texture
-    if (curveTexture) {
-      this.curveTexture = curveTexture
-    } else if (
+    // Handle curve texture synchronously (bake inline curves or use defaults)
+    if (
       options.fadeSizeCurve ||
       options.fadeOpacityCurve ||
       options.velocityCurve ||
@@ -108,24 +104,12 @@ export class VFXParticleSystem {
       this.curveTexture = createDefaultCurveTexture()
     }
 
-    // Set curve enabled flags
+    // Set curve enabled flags from inline curve data
     const u = this.uniforms as unknown as UniformAccessor
-    if (curveTextureChannels) {
-      u.fadeSizeCurveEnabled.value = curveTextureChannels.sizeEnabled ? 1 : 0
-      u.fadeOpacityCurveEnabled.value = curveTextureChannels.opacityEnabled
-        ? 1
-        : 0
-      u.velocityCurveEnabled.value = curveTextureChannels.velocityEnabled
-        ? 1
-        : 0
-      u.rotationSpeedCurveEnabled.value =
-        curveTextureChannels.rotationSpeedEnabled ? 1 : 0
-    } else {
-      u.fadeSizeCurveEnabled.value = options.fadeSizeCurve ? 1 : 0
-      u.fadeOpacityCurveEnabled.value = options.fadeOpacityCurve ? 1 : 0
-      u.velocityCurveEnabled.value = options.velocityCurve ? 1 : 0
-      u.rotationSpeedCurveEnabled.value = options.rotationSpeedCurve ? 1 : 0
-    }
+    u.fadeSizeCurveEnabled.value = options.fadeSizeCurve ? 1 : 0
+    u.fadeOpacityCurveEnabled.value = options.fadeOpacityCurve ? 1 : 0
+    u.velocityCurveEnabled.value = options.velocityCurve ? 1 : 0
+    u.rotationSpeedCurveEnabled.value = options.rotationSpeedCurve ? 1 : 0
 
     // Create compute shaders
     this.computeInit = createInitCompute(this.storage, np.maxParticles)
@@ -192,6 +176,39 @@ export class VFXParticleSystem {
         computeAsync: (c: unknown) => Promise<void>
       }
     ).computeAsync(this.computeInit)
+
+    // If curveTexturePath is set, load async and update texture in-place
+    if (this.options.curveTexturePath) {
+      try {
+        const result = await loadCurveTextureFromPath(
+          this.options.curveTexturePath
+        )
+        // Copy loaded RGBA data into existing texture in-place
+        const src = result.texture.image.data as Float32Array
+        const dst = this.curveTexture.image.data as Float32Array
+        dst.set(src)
+        this.curveTexture.needsUpdate = true
+        result.texture.dispose()
+
+        // Update curve-enabled uniforms from loaded channel bitmask
+        const u = this.uniforms as unknown as UniformAccessor
+        u.fadeSizeCurveEnabled.value =
+          result.activeChannels & CurveChannel.SIZE ? 1 : 0
+        u.fadeOpacityCurveEnabled.value =
+          result.activeChannels & CurveChannel.OPACITY ? 1 : 0
+        u.velocityCurveEnabled.value =
+          result.activeChannels & CurveChannel.VELOCITY ? 1 : 0
+        u.rotationSpeedCurveEnabled.value =
+          result.activeChannels & CurveChannel.ROTATION_SPEED ? 1 : 0
+      } catch (err) {
+        console.warn(
+          `Failed to load curve texture: ${this.options.curveTexturePath}, using baked/default`,
+          err
+        )
+        // Keep the synchronously created texture (baked or default)
+      }
+    }
+
     this._initialized = true
   }
 

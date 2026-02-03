@@ -9,7 +9,9 @@
       "Bash(bun install:*)",
       "Bash(npx vite build)",
       "Bash(bun run format:*)",
-      "Bash(bun run:*)"
+      "Bash(bun run:*)",
+      "Bash(tree:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

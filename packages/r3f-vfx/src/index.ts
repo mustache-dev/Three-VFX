@@ -18,9 +18,6 @@ export { VFXEmitter, useVFXEmitter } from './VFXEmitter'
 
 export { useVFXStore } from './react-store'
 
-export { useCurveTextureAsync } from './useCurveTextureAsync'
-export type { CurveTextureHookResult } from './useCurveTextureAsync'
-
 // Re-export types from core-vfx for convenience
 export type {
   CurvePoint,
@@ -45,4 +42,7 @@ export {
   EmitterController,
   isNonDefaultRotation,
   normalizeProps,
+  resolveCurveTexture,
 } from 'core-vfx'
+
+export type { CurveTextureResolved } from 'core-vfx'
