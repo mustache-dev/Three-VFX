@@ -1,5 +1,5 @@
 <script lang="ts">
-import { T } from '@threlte/core'
+  import { T } from '@threlte/core'
 </script>
 
 <T.DirectionalLight

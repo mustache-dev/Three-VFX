@@ -1,7 +1,5 @@
-// Svelte components are exported via the package.json "exports" field
-// and distributed as source .svelte files (standard Svelte library convention).
-// They are copied to dist/ by the build script.
-// Users import them as: import { VFXParticles, VFXEmitter } from 'threlte-vfx'
+export { default as VFXParticles } from './VFXParticles.svelte'
+export { default as VFXEmitter } from './VFXEmitter.svelte'
 
 export { useVFXEmitter } from './useVFXEmitter'
 export { useVFXStore } from './svelte-store'

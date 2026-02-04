@@ -1,10 +1,10 @@
 <script lang="ts">
-import { T } from '@threlte/core'
-import SceneLight from './SceneLight.svelte'
-import Floor from './Floor.svelte'
-import Player from './Player.svelte'
-import Boom from './Boom.svelte'
-import Particles from './Particles.svelte'
+  import { T } from '@threlte/core'
+  import SceneLight from './SceneLight.svelte'
+  import Floor from './Floor.svelte'
+  import Player from './Player.svelte'
+  import Boom from './Boom.svelte'
+  import Particles from './Particles.svelte'
 </script>
 
 <SceneLight />

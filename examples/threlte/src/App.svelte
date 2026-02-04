@@ -1,16 +1,16 @@
 <script lang="ts">
-import { Canvas } from '@threlte/core'
-import { WebGPURenderer } from 'three/webgpu'
-import Scene from './Scene.svelte'
+  import { Canvas } from '@threlte/core'
+  import { WebGPURenderer } from 'three/webgpu'
+  import Scene from './Scene.svelte'
 
-const createRenderer = (canvas: HTMLCanvasElement) => {
-  const renderer = new WebGPURenderer({
-    canvas,
-    antialias: true,
-    alpha: false,
-  })
-  return renderer
-}
+  const createRenderer = (canvas: HTMLCanvasElement) => {
+    const renderer = new WebGPURenderer({
+      canvas,
+      antialias: true,
+      alpha: false,
+    })
+    return renderer
+  }
 </script>
 
 <Canvas {createRenderer} shadows>
