@@ -11,7 +11,11 @@ import { VFXParticles } from 'r3f-vfx'
 
 function FallbackSprite() {
   const texture = useLoader(THREE.TextureLoader, './fallback.png')
-  return <sprite scale={[3, 3, 1]}><spriteMaterial map={texture} /></sprite>
+  return (
+    <sprite scale={[3, 3, 1]}>
+      <spriteMaterial map={texture} />
+    </sprite>
+  )
 }
 
 const keyboardMap = [
@@ -26,7 +30,7 @@ const keyboardMap = [
 export default function App() {
   return (
     <>
-      <Canvas shadows renderer={{ forceWebGL: false }}>
+      <Canvas shadows renderer={{ forceWebGL: true }}>
         <Suspense fallback={null}>
           <SceneLight />
           <WebGPUPostProcessing />

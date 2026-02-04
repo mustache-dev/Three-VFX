@@ -3,7 +3,9 @@ import type { Readable } from 'svelte/store'
 
 export function useVFXStore(): Readable<CoreState>
 export function useVFXStore<T>(selector: (state: CoreState) => T): Readable<T>
-export function useVFXStore<T>(selector?: (state: CoreState) => T): Readable<T> {
+export function useVFXStore<T>(
+  selector?: (state: CoreState) => T
+): Readable<T> {
   const pick = selector ?? ((s: CoreState) => s as unknown as T)
 
   return {

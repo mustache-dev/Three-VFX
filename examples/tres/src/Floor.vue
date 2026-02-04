@@ -1,14 +1,7 @@
 <script setup lang="ts">
 import { useMemo } from './composables'
 import { MeshStandardNodeMaterial } from 'three/webgpu'
-import {
-  positionWorld,
-  fract,
-  vec3,
-  float,
-  step,
-  max,
-} from 'three/tsl'
+import { positionWorld, fract, vec3, float, step, max } from 'three/tsl'
 
 const mat = useMemo(() => {
   const m = new MeshStandardNodeMaterial({

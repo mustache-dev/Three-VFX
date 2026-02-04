@@ -4,7 +4,12 @@ import { Appearance, Blending, EmitterShape, Lighting } from 'core-vfx'
 import { buildCurveTextureBin } from 'core-vfx'
 import { create } from 'zustand'
 import { GeometryType, geometryDefaults } from './geometry'
-import { generateVFXParticlesJSX, generateVueTemplate, generateSvelteTemplate, generateVanillaCode } from './code-generation'
+import {
+  generateVFXParticlesJSX,
+  generateVueTemplate,
+  generateSvelteTemplate,
+  generateVanillaCode,
+} from './code-generation'
 import { wrapped, styles } from './styles'
 
 export {
@@ -2449,7 +2454,8 @@ const EasingCurveEditor = ({ value, onChange, label = 'Easing Curve' }) => {
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.background = 'rgba(100, 200, 255, 0.1)'
-              e.currentTarget.style.border = '1px solid rgba(100, 200, 255, 0.3)'
+              e.currentTarget.style.border =
+                '1px solid rgba(100, 200, 255, 0.3)'
               e.currentTarget.style.boxShadow = 'none'
             }}
           >
@@ -2578,7 +2584,8 @@ const EasingCurveEditor = ({ value, onChange, label = 'Easing Curve' }) => {
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.background = 'rgba(168, 85, 247, 0.15)'
-                  e.currentTarget.style.border = '1px solid rgba(168, 85, 247, 0.3)'
+                  e.currentTarget.style.border =
+                    '1px solid rgba(168, 85, 247, 0.3)'
                   e.currentTarget.style.boxShadow = 'none'
                 }}
               >

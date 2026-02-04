@@ -71,7 +71,13 @@ export interface VFXParticlesProps {
 }
 
 export default class VFXParticles extends SvelteComponent<VFXParticlesProps> {
-  spawn(x?: number, y?: number, z?: number, count?: number, overrides?: Record<string, unknown> | null): void
+  spawn(
+    x?: number,
+    y?: number,
+    z?: number,
+    count?: number,
+    overrides?: Record<string, unknown> | null
+  ): void
   start(): void
   stop(): void
   clear(): void

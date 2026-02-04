@@ -4,7 +4,6 @@ import { onMount } from 'svelte'
 import { Vector3, Quaternion, Group } from 'three/webgpu'
 import {
   EmitterController,
-  isWebGPUBackend,
   coreStore,
   type EmitterControllerOptions,
 } from 'core-vfx'
@@ -44,7 +43,6 @@ let {
 const { renderer } = useThrelte()
 
 let groupRef: Group | null = $state(null)
-let isWebGPU = $state(false)
 
 const controller = new EmitterController({
   emitCount,
@@ -89,22 +87,13 @@ $effect(() => {
   })
 })
 
-function checkWebGPU() {
-  if (renderer && isWebGPUBackend(renderer)) {
-    isWebGPU = true
-    const system = getParticleSystem()
-    if (system) controller.setSystem(system)
-  }
-}
-
 onMount(() => {
-  checkWebGPU()
+  const system = getParticleSystem()
+  if (system) controller.setSystem(system)
 })
 
 // Frame loop
 useTask((delta) => {
-  if (!isWebGPU) return
-
   if (!controller.getSystem()) {
     const system = getParticleSystem()
     if (system) controller.setSystem(system)

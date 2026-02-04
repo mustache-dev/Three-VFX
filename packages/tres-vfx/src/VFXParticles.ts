@@ -17,7 +17,6 @@ import {
   EmitterShape,
   Lighting,
   VFXParticleSystem,
-  isWebGPUBackend,
   isNonDefaultRotation,
   normalizeProps,
   updateUniforms,
@@ -32,8 +31,6 @@ import {
   type StretchConfig,
   type Rotation3DInput,
 } from 'core-vfx'
-
-let warnedWebGL = false
 
 export const VFXParticles = defineComponent({
   name: 'VFXParticles',
@@ -57,13 +54,22 @@ export const VFXParticles = defineComponent({
       type: null as unknown as PropType<[number, number]>,
       default: () => [1, 0],
     },
-    fadeSizeCurve: { type: null as unknown as PropType<unknown[] | null>, default: null },
+    fadeSizeCurve: {
+      type: null as unknown as PropType<unknown[] | null>,
+      default: null,
+    },
     fadeOpacity: {
       type: null as unknown as PropType<[number, number]>,
       default: () => [1, 0],
     },
-    fadeOpacityCurve: { type: null as unknown as PropType<unknown[] | null>, default: null },
-    velocityCurve: { type: null as unknown as PropType<unknown[] | null>, default: null },
+    fadeOpacityCurve: {
+      type: null as unknown as PropType<unknown[] | null>,
+      default: null,
+    },
+    velocityCurve: {
+      type: null as unknown as PropType<unknown[] | null>,
+      default: null,
+    },
     gravity: {
       type: null as unknown as PropType<[number, number, number]>,
       default: () => [0, 0, 0],
@@ -81,7 +87,9 @@ export const VFXParticles = defineComponent({
       ],
     },
     startPosition: {
-      type: null as unknown as PropType<VFXParticleSystemOptions['startPosition']>,
+      type: null as unknown as PropType<
+        VFXParticleSystemOptions['startPosition']
+      >,
       default: () => [
         [0, 0],
         [0, 0],
@@ -101,7 +109,10 @@ export const VFXParticles = defineComponent({
       default: Appearance.GRADIENT,
     },
     alphaMap: { type: Object as PropType<THREE.Texture | null>, default: null },
-    flipbook: { type: Object as PropType<FlipbookConfig | null>, default: null },
+    flipbook: {
+      type: Object as PropType<FlipbookConfig | null>,
+      default: null,
+    },
     rotation: {
       type: null as unknown as PropType<Rotation3DInput>,
       default: () => [0, 0],
@@ -110,7 +121,10 @@ export const VFXParticles = defineComponent({
       type: null as unknown as PropType<Rotation3DInput>,
       default: () => [0, 0],
     },
-    rotationSpeedCurve: { type: null as unknown as PropType<unknown[] | null>, default: null },
+    rotationSpeedCurve: {
+      type: null as unknown as PropType<unknown[] | null>,
+      default: null,
+    },
     geometry: {
       type: Object as PropType<THREE.BufferGeometry | null>,
       default: null,
@@ -140,8 +154,14 @@ export const VFXParticles = defineComponent({
     backdropNode: { type: null as unknown as PropType<unknown>, default: null },
     opacityNode: { type: null as unknown as PropType<unknown>, default: null },
     colorNode: { type: null as unknown as PropType<unknown>, default: null },
-    alphaTestNode: { type: null as unknown as PropType<unknown>, default: null },
-    castShadowNode: { type: null as unknown as PropType<unknown>, default: null },
+    alphaTestNode: {
+      type: null as unknown as PropType<unknown>,
+      default: null,
+    },
+    castShadowNode: {
+      type: null as unknown as PropType<unknown>,
+      default: null,
+    },
     emitCount: { type: Number, default: 1 },
     emitterShape: {
       type: null as unknown as PropType<string | number>,
@@ -177,18 +197,20 @@ export const VFXParticles = defineComponent({
       type: Object as PropType<CollisionConfig | null>,
       default: null,
     },
-    curveTexturePath: { type: null as unknown as PropType<string | null>, default: null },
+    curveTexturePath: {
+      type: null as unknown as PropType<string | null>,
+      default: null,
+    },
     depthTest: { type: Boolean, default: true },
     renderOrder: { type: Number, default: 0 },
   },
-  setup(props, { expose, slots }) {
+  setup(props, { expose }) {
     const { renderer: rendererCtx } = useTresContext()
     const { onBeforeRender } = useLoop()
 
     const systemRef = shallowRef<VFXParticleSystem | null>(null)
     const renderObjectRef = shallowRef<THREE.Object3D | null>(null)
     const emitting = ref(props.autoStart)
-    const isWebGPU = ref(false)
     const debugValuesRef = ref<Record<string, unknown> | null>(null)
 
     // Track structural props for recreation
@@ -232,52 +254,87 @@ export const VFXParticles = defineComponent({
             ? (dbg.colorEnd as string[] | null)
             : props.colorEnd,
         fadeSize: (dbg?.fadeSize ?? props.fadeSize) as [number, number],
-        fadeSizeCurve: activeFadeSizeCurve.value as VFXParticleSystemOptions['fadeSizeCurve'],
-        fadeOpacity: (dbg?.fadeOpacity ?? props.fadeOpacity) as [number, number],
-        fadeOpacityCurve: activeFadeOpacityCurve.value as VFXParticleSystemOptions['fadeOpacityCurve'],
-        velocityCurve: activeVelocityCurve.value as VFXParticleSystemOptions['velocityCurve'],
+        fadeSizeCurve:
+          activeFadeSizeCurve.value as VFXParticleSystemOptions['fadeSizeCurve'],
+        fadeOpacity: (dbg?.fadeOpacity ?? props.fadeOpacity) as [
+          number,
+          number,
+        ],
+        fadeOpacityCurve:
+          activeFadeOpacityCurve.value as VFXParticleSystemOptions['fadeOpacityCurve'],
+        velocityCurve:
+          activeVelocityCurve.value as VFXParticleSystemOptions['velocityCurve'],
         gravity: (dbg?.gravity ?? props.gravity) as [number, number, number],
         lifetime: (dbg?.lifetime ?? props.lifetime) as [number, number],
-        direction: (dbg?.direction ?? props.direction) as VFXParticleSystemOptions['direction'],
-        startPosition: (dbg?.startPosition ?? props.startPosition) as VFXParticleSystemOptions['startPosition'],
+        direction: (dbg?.direction ??
+          props.direction) as VFXParticleSystemOptions['direction'],
+        startPosition: (dbg?.startPosition ??
+          props.startPosition) as VFXParticleSystemOptions['startPosition'],
         speed: (dbg?.speed ?? props.speed) as VFXParticleSystemOptions['speed'],
         friction: (dbg?.friction ?? props.friction) as FrictionConfig,
-        appearance: activeAppearance.value as VFXParticleSystemOptions['appearance'],
+        appearance:
+          activeAppearance.value as VFXParticleSystemOptions['appearance'],
         alphaMap: props.alphaMap,
         flipbook: props.flipbook,
         rotation: (dbg?.rotation ?? props.rotation) as Rotation3DInput,
-        rotationSpeed: (dbg?.rotationSpeed ?? props.rotationSpeed) as Rotation3DInput,
-        rotationSpeedCurve: activeRotationSpeedCurve.value as VFXParticleSystemOptions['rotationSpeedCurve'],
+        rotationSpeed: (dbg?.rotationSpeed ??
+          props.rotationSpeed) as Rotation3DInput,
+        rotationSpeedCurve:
+          activeRotationSpeedCurve.value as VFXParticleSystemOptions['rotationSpeedCurve'],
         geometry: activeGeometry.value,
         orientToDirection: activeOrientToDirection.value as boolean,
         orientAxis: (dbg?.orientAxis ?? props.orientAxis) as string,
-        stretchBySpeed: (dbg?.stretchBySpeed ?? props.stretchBySpeed) as StretchConfig | null,
+        stretchBySpeed: (dbg?.stretchBySpeed ??
+          props.stretchBySpeed) as StretchConfig | null,
         lighting: activeLighting.value as VFXParticleSystemOptions['lighting'],
         shadow: activeShadow.value as boolean,
-        blending: (dbg?.blending ?? props.blending) as VFXParticleSystemOptions['blending'],
+        blending: (dbg?.blending ??
+          props.blending) as VFXParticleSystemOptions['blending'],
         intensity: (dbg?.intensity ?? props.intensity) as number,
         position: (dbg?.position ?? props.position) as [number, number, number],
         autoStart: (dbg?.autoStart ?? props.autoStart) as boolean,
         delay: (dbg?.delay ?? props.delay) as number,
         emitCount: (dbg?.emitCount ?? props.emitCount) as number,
-        emitterShape: (dbg?.emitterShape ?? props.emitterShape) as VFXParticleSystemOptions['emitterShape'],
-        emitterRadius: (dbg?.emitterRadius ?? props.emitterRadius) as [number, number],
+        emitterShape: (dbg?.emitterShape ??
+          props.emitterShape) as VFXParticleSystemOptions['emitterShape'],
+        emitterRadius: (dbg?.emitterRadius ?? props.emitterRadius) as [
+          number,
+          number,
+        ],
         emitterAngle: (dbg?.emitterAngle ?? props.emitterAngle) as number,
-        emitterHeight: (dbg?.emitterHeight ?? props.emitterHeight) as [number, number],
-        emitterSurfaceOnly: (dbg?.emitterSurfaceOnly ?? props.emitterSurfaceOnly) as boolean,
-        emitterDirection: (dbg?.emitterDirection ?? props.emitterDirection) as [number, number, number],
-        turbulence: (dbg?.turbulence ?? props.turbulence) as TurbulenceConfig | null,
-        attractors: (dbg?.attractors ?? props.attractors) as AttractorConfig[] | null,
-        attractToCenter: (dbg?.attractToCenter ?? props.attractToCenter) as boolean,
-        startPositionAsDirection: (dbg?.startPositionAsDirection ?? props.startPositionAsDirection) as boolean,
+        emitterHeight: (dbg?.emitterHeight ?? props.emitterHeight) as [
+          number,
+          number,
+        ],
+        emitterSurfaceOnly: (dbg?.emitterSurfaceOnly ??
+          props.emitterSurfaceOnly) as boolean,
+        emitterDirection: (dbg?.emitterDirection ?? props.emitterDirection) as [
+          number,
+          number,
+          number,
+        ],
+        turbulence: (dbg?.turbulence ??
+          props.turbulence) as TurbulenceConfig | null,
+        attractors: (dbg?.attractors ?? props.attractors) as
+          | AttractorConfig[]
+          | null,
+        attractToCenter: (dbg?.attractToCenter ??
+          props.attractToCenter) as boolean,
+        startPositionAsDirection: (dbg?.startPositionAsDirection ??
+          props.startPositionAsDirection) as boolean,
         softParticles: (dbg?.softParticles ?? props.softParticles) as boolean,
         softDistance: (dbg?.softDistance ?? props.softDistance) as number,
-        collision: (dbg?.collision ?? props.collision) as CollisionConfig | null,
-        backdropNode: props.backdropNode as VFXParticleSystemOptions['backdropNode'],
-        opacityNode: props.opacityNode as VFXParticleSystemOptions['opacityNode'],
+        collision: (dbg?.collision ??
+          props.collision) as CollisionConfig | null,
+        backdropNode:
+          props.backdropNode as VFXParticleSystemOptions['backdropNode'],
+        opacityNode:
+          props.opacityNode as VFXParticleSystemOptions['opacityNode'],
         colorNode: props.colorNode as VFXParticleSystemOptions['colorNode'],
-        alphaTestNode: props.alphaTestNode as VFXParticleSystemOptions['alphaTestNode'],
-        castShadowNode: props.castShadowNode as VFXParticleSystemOptions['castShadowNode'],
+        alphaTestNode:
+          props.alphaTestNode as VFXParticleSystemOptions['alphaTestNode'],
+        castShadowNode:
+          props.castShadowNode as VFXParticleSystemOptions['castShadowNode'],
         depthTest: (dbg?.depthTest ?? props.depthTest) as boolean,
         renderOrder: (dbg?.renderOrder ?? props.renderOrder) as number,
         curveTexturePath: props.curveTexturePath,
@@ -328,18 +385,6 @@ export const VFXParticles = defineComponent({
         return
       }
 
-      if (!isWebGPUBackend(renderer)) {
-        if (!warnedWebGL) {
-          warnedWebGL = true
-          console.warn(
-            'tres-vfx: WebGPU backend not detected. Particle system disabled.'
-          )
-        }
-        isWebGPU.value = false
-        return
-      }
-
-      isWebGPU.value = true
       const system = createSystem()
       if (!system) return
 
@@ -395,8 +440,7 @@ export const VFXParticles = defineComponent({
         newValues = {
           ...newValues,
           colorEnd: null,
-          colorStart:
-            newValues.colorStart ??
+          colorStart: newValues.colorStart ??
             debugValuesRef.value?.colorStart ?? ['#ffffff'],
         }
       }
@@ -408,13 +452,17 @@ export const VFXParticles = defineComponent({
         activeFadeSizeCurve.value = newValues.fadeSizeCurve as unknown[] | null
       }
       if ('fadeOpacityCurve' in newValues) {
-        activeFadeOpacityCurve.value = newValues.fadeOpacityCurve as unknown[] | null
+        activeFadeOpacityCurve.value = newValues.fadeOpacityCurve as
+          | unknown[]
+          | null
       }
       if ('velocityCurve' in newValues) {
         activeVelocityCurve.value = newValues.velocityCurve as unknown[] | null
       }
       if ('rotationSpeedCurve' in newValues) {
-        activeRotationSpeedCurve.value = newValues.rotationSpeedCurve as unknown[] | null
+        activeRotationSpeedCurve.value = newValues.rotationSpeedCurve as
+          | unknown[]
+          | null
       }
 
       if ('turbulence' in newValues) {
@@ -449,7 +497,8 @@ export const VFXParticles = defineComponent({
         system.setPosition(newValues.position as [number, number, number])
       }
 
-      if ('delay' in newValues) system.setDelay((newValues.delay as number) ?? 0)
+      if ('delay' in newValues)
+        system.setDelay((newValues.delay as number) ?? 0)
       if ('emitCount' in newValues)
         system.setEmitCount((newValues.emitCount as number) ?? 1)
 
@@ -498,17 +547,13 @@ export const VFXParticles = defineComponent({
 
       // Geometry type changes
       if ('geometryType' in newValues || 'geometryArgs' in newValues) {
-        const geoType =
-          newValues.geometryType ?? prevGeometryTypeRef.value
-        const geoArgs =
-          newValues.geometryArgs ?? prevGeometryArgsRef.value
+        const geoType = newValues.geometryType ?? prevGeometryTypeRef.value
+        const geoArgs = newValues.geometryArgs ?? prevGeometryArgsRef.value
         const geoTypeChanged =
-          'geometryType' in newValues &&
-          geoType !== prevGeometryTypeRef.value
+          'geometryType' in newValues && geoType !== prevGeometryTypeRef.value
         const geoArgsChanged =
           'geometryArgs' in newValues &&
-          JSON.stringify(geoArgs) !==
-            JSON.stringify(prevGeometryArgsRef.value)
+          JSON.stringify(geoArgs) !== JSON.stringify(prevGeometryArgsRef.value)
 
         if (geoTypeChanged || geoArgsChanged) {
           prevGeometryTypeRef.value = geoType
@@ -522,7 +567,10 @@ export const VFXParticles = defineComponent({
               }
               activeGeometry.value = null
             } else {
-              const newGeometry = createGeometry(geoType as string, geoArgs as Record<string, number> | undefined)
+              const newGeometry = createGeometry(
+                geoType as string,
+                geoArgs as Record<string, number> | undefined
+              )
               if (newGeometry) {
                 if (
                   activeGeometry.value !== null &&
@@ -668,7 +716,6 @@ export const VFXParticles = defineComponent({
         activeRotationSpeedCurve,
       ],
       () => {
-        if (!isWebGPU.value) return
         initSystem()
       }
     )
@@ -831,10 +878,6 @@ export const VFXParticles = defineComponent({
     expose(api)
 
     return () => {
-      if (!isWebGPU.value) {
-        return slots.fallback ? slots.fallback() : null
-      }
-
       const obj = renderObjectRef.value
       if (!obj) return null
 
