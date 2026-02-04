@@ -31,7 +31,7 @@ const mat = useMemo(() => {
   )
   const grid = max(lineX, lineZ)
 
-  const gridColor = vec3(0.1, 0.2, 0.5).add(vec3(0.3, 0.6, 0.8).mul(grid))
+  const gridColor = vec3(0.1, 0.3, 0.1).add(vec3(0.3, 0.7, 0.3).mul(grid))
 
   m.colorNode = gridColor
 

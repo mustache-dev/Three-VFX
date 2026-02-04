@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "license": "MIT",
   "type": "module",
+  "svelte": "./dist/index.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/mustache-dev/r3f-vfx.git"
@@ -10,7 +11,16 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
+      "svelte": "./dist/index.js",
       "import": "./dist/index.js"
+    },
+    "./VFXParticles.svelte": {
+      "svelte": "./dist/VFXParticles.svelte",
+      "import": "./dist/VFXParticles.svelte"
+    },
+    "./VFXEmitter.svelte": {
+      "svelte": "./dist/VFXEmitter.svelte",
+      "import": "./dist/VFXEmitter.svelte"
     }
   },
   "files": [
@@ -18,15 +28,23 @@
   ],
   "scripts": {
     "dev": "tsup --watch",
-    "build": "tsup",
+    "build": "tsup && cp src/*.svelte dist/",
     "typecheck": "tsc",
     "copy-readme": "cp ../../README.md README.md",
     "prepublishOnly": "bun run typecheck && bun run build && bun run copy-readme"
   },
   "dependencies": {
-    "core-vfx": "0.1.0"
+    "core-vfx": "0.1.0",
+    "debug-vfx": "0.1.0"
+  },
+  "peerDependencies": {
+    "@threlte/core": ">=8.0.0",
+    "svelte": ">=5.0.0",
+    "three": ">=0.182.0"
   },
   "devDependencies": {
+    "@threlte/core": "8.3.1",
+    "svelte": "5.28.2",
     "tsup": "8.5.1",
     "typescript": "5.9.3"
   }

@@ -4,7 +4,7 @@ import { Appearance, Blending, EmitterShape, Lighting } from 'core-vfx'
 import { buildCurveTextureBin } from 'core-vfx'
 import { create } from 'zustand'
 import { GeometryType, geometryDefaults } from './geometry'
-import { generateVFXParticlesJSX, generateVueTemplate, generateVanillaCode } from './code-generation'
+import { generateVFXParticlesJSX, generateVueTemplate, generateSvelteTemplate, generateVanillaCode } from './code-generation'
 import { wrapped, styles } from './styles'
 
 export {
@@ -371,7 +371,7 @@ const ScrubInput = ({
     ...(isDragging
       ? {
           background: `rgba(249, 115, 22, 0.15)`,
-          borderColor: wrapped.accent,
+          border: `1px solid ${wrapped.accent}`,
           boxShadow: `0 0 0 2px ${wrapped.accentGlow}, 0 0 12px rgba(249, 115, 22, 0.3)`,
           color: wrapped.accentLight,
         }
@@ -2396,14 +2396,14 @@ const EasingCurveEditor = ({ value, onChange, label = 'Easing Curve' }) => {
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = 'rgba(249, 115, 22, 0.25)'
                 e.currentTarget.style.color = wrapped.accent
-                e.currentTarget.style.borderColor = wrapped.accent
+                e.currentTarget.style.border = `1px solid ${wrapped.accent}`
                 e.currentTarget.style.boxShadow =
                   '0 0 8px rgba(249, 115, 22, 0.3)'
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.background = 'rgba(249, 115, 22, 0.1)'
                 e.currentTarget.style.color = wrapped.textMuted
-                e.currentTarget.style.borderColor = wrapped.border
+                e.currentTarget.style.border = `1px solid ${wrapped.border}`
                 e.currentTarget.style.boxShadow = 'none'
               }}
             >
@@ -2443,13 +2443,13 @@ const EasingCurveEditor = ({ value, onChange, label = 'Easing Curve' }) => {
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = 'rgba(100, 200, 255, 0.25)'
-              e.currentTarget.style.borderColor = '#64c8ff'
+              e.currentTarget.style.border = '1px solid #64c8ff'
               e.currentTarget.style.boxShadow =
                 '0 0 8px rgba(100, 200, 255, 0.4)'
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.background = 'rgba(100, 200, 255, 0.1)'
-              e.currentTarget.style.borderColor = 'rgba(100, 200, 255, 0.3)'
+              e.currentTarget.style.border = '1px solid rgba(100, 200, 255, 0.3)'
               e.currentTarget.style.boxShadow = 'none'
             }}
           >
@@ -2572,13 +2572,13 @@ const EasingCurveEditor = ({ value, onChange, label = 'Easing Curve' }) => {
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.background = 'rgba(168, 85, 247, 0.3)'
-                  e.currentTarget.style.borderColor = '#a855f7'
+                  e.currentTarget.style.border = '1px solid #a855f7'
                   e.currentTarget.style.boxShadow =
                     '0 0 8px rgba(168, 85, 247, 0.4)'
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.background = 'rgba(168, 85, 247, 0.15)'
-                  e.currentTarget.style.borderColor = 'rgba(168, 85, 247, 0.3)'
+                  e.currentTarget.style.border = '1px solid rgba(168, 85, 247, 0.3)'
                   e.currentTarget.style.boxShadow = 'none'
                 }}
               >
@@ -2621,15 +2621,15 @@ const EasingCurveEditor = ({ value, onChange, label = 'Easing Curve' }) => {
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.background = 'rgba(168, 85, 247, 0.3)'
-                    e.currentTarget.style.borderColor = '#a855f7'
+                    e.currentTarget.style.border = '1px solid #a855f7'
                     e.currentTarget.style.boxShadow =
                       '0 0 8px rgba(168, 85, 247, 0.4)'
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.background =
                       'rgba(168, 85, 247, 0.15)'
-                    e.currentTarget.style.borderColor =
-                      'rgba(168, 85, 247, 0.3)'
+                    e.currentTarget.style.border =
+                      '1px solid rgba(168, 85, 247, 0.3)'
                     e.currentTarget.style.boxShadow = 'none'
                   }}
                 >
@@ -2669,15 +2669,15 @@ const EasingCurveEditor = ({ value, onChange, label = 'Easing Curve' }) => {
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.background = 'rgba(168, 85, 247, 0.3)'
-                    e.currentTarget.style.borderColor = '#a855f7'
+                    e.currentTarget.style.border = '1px solid #a855f7'
                     e.currentTarget.style.boxShadow =
                       '0 0 8px rgba(168, 85, 247, 0.4)'
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.background =
                       'rgba(168, 85, 247, 0.15)'
-                    e.currentTarget.style.borderColor =
-                      'rgba(168, 85, 247, 0.3)'
+                    e.currentTarget.style.border =
+                      '1px solid rgba(168, 85, 247, 0.3)'
                     e.currentTarget.style.boxShadow = 'none'
                   }}
                 >
@@ -2836,7 +2836,9 @@ const DebugPanelContent = ({ initialValues, onUpdate, mode = 'r3f' }) => {
         ? generateVanillaCode(valuesRef.current)
         : mode === 'tres'
           ? generateVueTemplate(valuesRef.current)
-          : generateVFXParticlesJSX(valuesRef.current)
+          : mode === 'threlte'
+            ? generateSvelteTemplate(valuesRef.current)
+            : generateVFXParticlesJSX(valuesRef.current)
     try {
       await navigator.clipboard.writeText(code)
       setCopySuccess(true)
@@ -3328,7 +3330,7 @@ const DebugPanelContent = ({ initialValues, onUpdate, mode = 'r3f' }) => {
               if (!copySuccess) {
                 Object.assign(e.currentTarget.style, {
                   background: `linear-gradient(135deg, rgba(249, 115, 22, 0.25) 0%, rgba(251, 146, 60, 0.15) 100%)`,
-                  borderColor: wrapped.accent,
+                  border: `1px solid ${wrapped.accent}`,
                   boxShadow: `0 0 20px rgba(249, 115, 22, 0.4), 0 0 40px rgba(249, 115, 22, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)`,
                   color: wrapped.accentLight,
                   textShadow: `0 0 12px rgba(249, 115, 22, 0.8)`,
@@ -3339,7 +3341,7 @@ const DebugPanelContent = ({ initialValues, onUpdate, mode = 'r3f' }) => {
               if (!copySuccess) {
                 Object.assign(e.currentTarget.style, {
                   background: `linear-gradient(135deg, rgba(249, 115, 22, 0.15) 0%, rgba(251, 146, 60, 0.1) 100%)`,
-                  borderColor: wrapped.borderLit,
+                  border: `1px solid ${wrapped.borderLit}`,
                   boxShadow: `0 0 12px rgba(249, 115, 22, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05)`,
                   color: wrapped.accent,
                   textShadow: `0 0 8px rgba(249, 115, 22, 0.5)`,

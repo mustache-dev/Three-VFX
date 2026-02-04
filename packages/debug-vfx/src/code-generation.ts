@@ -496,6 +496,9 @@ export const generateVueTemplate = (values: Values): string => {
   return `<VFXParticles\n  ${props.join('\n  ')}\n/>`
 }
 
+// Svelte template syntax is identical to JSX for component props
+export const generateSvelteTemplate = generateVFXParticlesJSX
+
 // Generate vanilla JS constructor code from values
 export const generateVanillaCode = (values: Values): string => {
   const props: string[] = []

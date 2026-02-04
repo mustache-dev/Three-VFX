@@ -97,7 +97,7 @@ async function main() {
     step(float(1).sub(gridFract.y), lineWidth)
   )
   const grid = max(lineX, lineZ)
-  const gridColor = vec3(0.1, 0.2, 0.5).add(vec3(0.3, 0.6, 0.8).mul(grid))
+  const gridColor = vec3(0.5, 0.4, 0.1).add(vec3(0.8, 0.7, 0.3).mul(grid))
   floorMat.colorNode = gridColor
 
   const zDist = abs(positionWorld.z.sub(cameraPosition.z))

@@ -1,0 +1,23 @@
+{
+  "name": "threlte-example",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "start": "vite preview --host"
+  },
+  "dependencies": {
+    "@threlte/core": "^8.3.1",
+    "@threlte/extras": "^9.7.1",
+    "threlte-vfx": "^0.1.0",
+    "svelte": "^5.28.2",
+    "three": "0.182.0"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^5.0.0",
+    "@types/three": "0.182.0",
+    "typescript": "5.9.3",
+    "vite": "7.3.1"
+  }
+}

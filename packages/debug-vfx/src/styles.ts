@@ -135,7 +135,7 @@ export const styles: Record<string, CSSProperties> = {
     position: 'relative',
   },
   sectionHover: {
-    borderColor: 'transparent',
+    border: '1px solid transparent',
     background: `linear-gradient(${wrapped.bgSection}, ${wrapped.bgSection}) padding-box, linear-gradient(135deg, ${wrapped.accent} 0%, ${wrapped.accentLight} 50%, rgba(251, 191, 36, 0.6) 100%) border-box`,
   },
   sectionHeader: {
@@ -370,21 +370,21 @@ export const styles: Record<string, CSSProperties> = {
   },
   copyBtnHover: {
     background: `linear-gradient(135deg, rgba(249, 115, 22, 0.25) 0%, rgba(251, 146, 60, 0.15) 100%)`,
-    borderColor: wrapped.accent,
+    border: `1px solid ${wrapped.accent}`,
     boxShadow: `0 0 20px rgba(249, 115, 22, 0.4), 0 0 40px rgba(249, 115, 22, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)`,
     color: wrapped.accentLight,
     textShadow: `0 0 12px rgba(249, 115, 22, 0.8)`,
   },
   copyBtnSuccess: {
     background: `linear-gradient(135deg, rgba(34, 197, 94, 0.25) 0%, rgba(34, 197, 94, 0.15) 100%)`,
-    borderColor: 'rgba(34, 197, 94, 0.6)',
+    border: '1px solid rgba(34, 197, 94, 0.6)',
     color: '#4ade80',
     boxShadow: `0 0 16px rgba(34, 197, 94, 0.4), 0 0 32px rgba(34, 197, 94, 0.2)`,
     textShadow: `0 0 8px rgba(34, 197, 94, 0.6)`,
   },
   inputDragging: {
     background: `rgba(249, 115, 22, 0.15) !important`,
-    borderColor: `${wrapped.accent} !important`,
+    border: `1px solid ${wrapped.accent} !important`,
     boxShadow: `0 0 0 2px ${wrapped.accentGlow}, 0 0 12px rgba(249, 115, 22, 0.3)`,
     color: wrapped.accentLight,
   },

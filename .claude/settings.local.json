@@ -14,7 +14,12 @@
       "Bash(npx tsc:*)",
       "WebSearch",
       "WebFetch(domain:docs.tresjs.org)",
-      "WebFetch(domain:cientos.tresjs.org)"
+      "WebFetch(domain:cientos.tresjs.org)",
+      "Bash(grep:*)",
+      "WebFetch(domain:threlte.xyz)",
+      "Bash(wc:*)",
+      "Bash(bun threlte:*)",
+      "Bash(ls:*)"
     ]
   }
 }
