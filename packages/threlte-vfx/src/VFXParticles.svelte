@@ -9,7 +9,6 @@ import {
   EmitterShape,
   Lighting,
   VFXParticleSystem,
-  isWebGPUBackend,
   isNonDefaultRotation,
   normalizeProps,
   updateUniforms,
@@ -144,18 +143,15 @@ let {
 
 const { renderer } = useThrelte()
 
-let warnedWebGL = false
 let mounted = false
 
 // Internal state — NOT tracked by effects (plain variables)
 let _system: VFXParticleSystem | null = null
 let _renderObject: THREE.Object3D | null = null
-let _isWebGPU = false
 let _emitting = autoStart
 
 // Reactive state for the template only
 let renderObjectForTemplate: THREE.Object3D | null = $state(null)
-let isWebGPUForTemplate = $state(false)
 
 let debugValues: Record<string, unknown> | null = null
 
@@ -266,7 +262,6 @@ function destroySystem() {
   _system = null
   _renderObject = null
   renderObjectForTemplate = null
-  isWebGPUForTemplate = false
 }
 
 function initSystem() {
@@ -285,20 +280,6 @@ function initSystem() {
     return
   }
 
-  if (!isWebGPUBackend(renderer)) {
-    if (!warnedWebGL) {
-      warnedWebGL = true
-      console.warn(
-        'threlte-vfx: WebGPU backend not detected. Particle system disabled.'
-      )
-    }
-    _isWebGPU = false
-    isWebGPUForTemplate = false
-    renderObjectForTemplate = null
-    return
-  }
-
-  _isWebGPU = true
   const newSystem = createSystem()
   if (!newSystem) return
 
@@ -334,7 +315,6 @@ function initSystem() {
   }
 
   // Update template-facing reactive state last
-  isWebGPUForTemplate = true
   renderObjectForTemplate = newSystem.renderObject
 }
 
@@ -627,7 +607,6 @@ $effect(() => {
   // Use untrack for the actual init to avoid reading/writing
   // reactive state that would re-trigger this effect
   untrack(() => {
-    if (!_isWebGPU) return
     initSystem()
   })
 })
@@ -768,6 +747,6 @@ export function clear() {
 }
 </script>
 
-{#if isWebGPUForTemplate && renderObjectForTemplate}
+{#if renderObjectForTemplate}
   <T is={renderObjectForTemplate} />
 {/if}

@@ -8,6 +8,7 @@
       canvas,
       antialias: true,
       alpha: false,
+      forceWebGL: false,
     })
     return renderer
   }

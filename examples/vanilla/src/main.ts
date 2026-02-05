@@ -48,7 +48,10 @@ async function main() {
   camera.position.set(0, 3, 10)
   camera.rotation.set(-Math.PI / 6, 0, 0)
 
-  const renderer = new THREE.WebGPURenderer({ antialias: true, forceWebGL: false })
+  const renderer = new THREE.WebGPURenderer({
+    antialias: true,
+    forceWebGL: false,
+  })
   renderer.setSize(window.innerWidth, window.innerHeight)
   renderer.setPixelRatio(window.devicePixelRatio)
   renderer.toneMapping = THREE.ACESFilmicToneMapping
@@ -138,9 +141,7 @@ async function main() {
       if (name === 'run') {
         action.setEffectiveTimeScale(2)
       }
-      if (
-        ATTACK_COMBO.includes(name as (typeof ATTACK_COMBO)[number])
-      ) {
+      if (ATTACK_COMBO.includes(name as (typeof ATTACK_COMBO)[number])) {
         action.setLoop(THREE.LoopOnce, 1)
         action.clampWhenFinished = true
       }
@@ -180,9 +181,7 @@ async function main() {
 
   mixer.addEventListener('finished', (e: { action: THREE.AnimationAction }) => {
     const finishedName = e.action.getClip().name
-    if (
-      ATTACK_COMBO.includes(finishedName as (typeof ATTACK_COMBO)[number])
-    ) {
+    if (ATTACK_COMBO.includes(finishedName as (typeof ATTACK_COMBO)[number])) {
       if (nextAttackQueued && comboIndex < ATTACK_COMBO.length - 1) {
         comboIndex++
         nextAttackQueued = false
@@ -393,7 +392,10 @@ async function main() {
     const speed = isRun() ? runSpeed : walkSpeed
     const isMoving = moveX !== 0 || moveZ !== 0
 
-    vel.set(moveX, 0, moveZ).normalize().multiplyScalar(speed * delta)
+    vel
+      .set(moveX, 0, moveZ)
+      .normalize()
+      .multiplyScalar(speed * delta)
     playerGroup.position.add(vel)
     playerGroup.position.y = -1.2
 
@@ -416,9 +418,7 @@ async function main() {
     if (newAnim !== baseAnimation) {
       baseAnimation = newAnim
       if (!isAttacking) {
-        playAnimation(
-          newAnim === 'idle' ? 'idle-sword' : newAnim
-        )
+        playAnimation(newAnim === 'idle' ? 'idle-sword' : newAnim)
       }
     }
 
@@ -442,18 +442,12 @@ async function main() {
       boomVelocities[i].y += gravity * delta
       boomVectors[i].addScaledVector(boomVelocities[i], delta)
 
-      particles.spawn(
-        boomVectors[i].x,
-        boomVectors[i].y,
-        boomVectors[i].z,
-        1,
-        {
-          emitterShape: 2,
-          emitterRadius: [0, 0],
-          size: [0.1, 0.3],
-          speed: [1.2, 1.2],
-        }
-      )
+      particles.spawn(boomVectors[i].x, boomVectors[i].y, boomVectors[i].z, 1, {
+        emitterShape: 2,
+        emitterRadius: [0, 0],
+        size: [0.1, 0.3],
+        speed: [1.2, 1.2],
+      })
     }
 
     if (boomTimer > 2) {

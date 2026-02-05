@@ -104,8 +104,16 @@ onBeforeRender(({ delta }) => {
     :speed="[0.6, 0.6]"
     :lifetime="[2, 2.5]"
     :start-position-as-direction="true"
-    :rotation="[[0, 0], [-Math.PI * 2, Math.PI * 2], [0, 0]]"
-    :rotation-speed="[[0, 0], [-3, 3], [0, 0]]"
+    :rotation="[
+      [0, 0],
+      [-Math.PI * 2, Math.PI * 2],
+      [0, 0],
+    ]"
+    :rotation-speed="[
+      [0, 0],
+      [-3, 3],
+      [0, 0],
+    ]"
     appearance="default"
     lighting="basic"
     :emitter-shape="2"

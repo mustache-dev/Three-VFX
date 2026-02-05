@@ -28,6 +28,16 @@ import {
   loadCurveTextureFromPath,
   CurveChannel,
 } from './curves'
+import { isWebGPUBackend } from './utils'
+import {
+  cpuInit,
+  cpuSpawn,
+  cpuUpdate,
+  extractCPUArrays,
+  markAllDirty,
+  markUpdateDirty,
+  type CPUStorageArrays,
+} from './webgl-fallback'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type UniformAccessor = Record<string, { value: any }>
@@ -57,6 +67,8 @@ export class VFXParticleSystem {
   private emitAccumulator = 0
   private turbulenceSpeed: number
   position: [number, number, number]
+  private isWebGL: boolean
+  private cpuArrays: CPUStorageArrays | null = null
 
   constructor(
     renderer: THREE.WebGPURenderer,
@@ -111,26 +123,37 @@ export class VFXParticleSystem {
     u.velocityCurveEnabled.value = options.velocityCurve ? 1 : 0
     u.rotationSpeedCurveEnabled.value = options.rotationSpeedCurve ? 1 : 0
 
-    // Create compute shaders
-    this.computeInit = createInitCompute(this.storage, np.maxParticles)
-    this.computeSpawn = createSpawnCompute(
-      this.storage,
-      this.uniforms,
-      np.maxParticles
-    )
-    this.computeUpdate = createUpdateCompute(
-      this.storage,
-      this.uniforms,
-      this.curveTexture,
-      np.maxParticles,
-      {
-        turbulence: this.features.turbulence,
-        attractors: this.features.attractors,
-        collision: this.features.collision,
-        rotation: this.features.rotation,
-        perParticleColor: this.features.perParticleColor,
-      }
-    )
+    // Detect backend
+    this.isWebGL = !isWebGPUBackend(renderer)
+
+    if (this.isWebGL) {
+      // CPU fallback: extract typed arrays, skip compute shader creation
+      this.cpuArrays = extractCPUArrays(this.storage)
+      this.computeInit = null
+      this.computeSpawn = null
+      this.computeUpdate = null
+    } else {
+      // Create compute shaders (WebGPU path)
+      this.computeInit = createInitCompute(this.storage, np.maxParticles)
+      this.computeSpawn = createSpawnCompute(
+        this.storage,
+        this.uniforms,
+        np.maxParticles
+      )
+      this.computeUpdate = createUpdateCompute(
+        this.storage,
+        this.uniforms,
+        this.curveTexture,
+        np.maxParticles,
+        {
+          turbulence: this.features.turbulence,
+          attractors: this.features.attractors,
+          collision: this.features.collision,
+          rotation: this.features.rotation,
+          perParticleColor: this.features.perParticleColor,
+        }
+      )
+    }
 
     // Create material
     this.material = createParticleMaterial(
@@ -171,11 +194,17 @@ export class VFXParticleSystem {
 
   async init(): Promise<void> {
     if (this.initialized) return
-    await (
-      this.renderer as unknown as {
-        computeAsync: (c: unknown) => Promise<void>
-      }
-    ).computeAsync(this.computeInit)
+
+    if (this.isWebGL) {
+      cpuInit(this.cpuArrays!, this.normalizedProps.maxParticles)
+      markAllDirty(this.storage)
+    } else {
+      await (
+        this.renderer as unknown as {
+          computeAsync: (c: unknown) => Promise<void>
+        }
+      ).computeAsync(this.computeInit)
+    }
 
     // If curveTexturePath is set, load async and update texture in-place
     if (this.options.curveTexturePath) {
@@ -247,11 +276,21 @@ export class VFXParticleSystem {
     u.spawnSeed.value = Math.random() * 10000
 
     this.nextIndex = endIdx
-    ;(
-      this.renderer as unknown as {
-        computeAsync: (c: unknown) => Promise<void>
-      }
-    ).computeAsync(this.computeSpawn)
+
+    if (this.isWebGL) {
+      cpuSpawn(
+        this.cpuArrays!,
+        this.uniforms,
+        this.normalizedProps.maxParticles
+      )
+      markAllDirty(this.storage)
+    } else {
+      ;(
+        this.renderer as unknown as {
+          computeAsync: (c: unknown) => Promise<void>
+        }
+      ).computeAsync(this.computeSpawn)
+    }
 
     if (restore) restore()
   }
@@ -263,11 +302,27 @@ export class VFXParticleSystem {
     u.deltaTime.value = delta
     u.turbulenceTime.value += delta * this.turbulenceSpeed
 
-    await (
-      this.renderer as unknown as {
-        computeAsync: (c: unknown) => Promise<void>
-      }
-    ).computeAsync(this.computeUpdate)
+    if (this.isWebGL) {
+      cpuUpdate(
+        this.cpuArrays!,
+        this.uniforms,
+        this.curveTexture,
+        this.normalizedProps.maxParticles,
+        {
+          turbulence: this.features.turbulence,
+          attractors: this.features.attractors,
+          collision: this.features.collision,
+          rotation: this.features.rotation,
+        }
+      )
+      markUpdateDirty(this.storage, this.features.rotation)
+    } else {
+      await (
+        this.renderer as unknown as {
+          computeAsync: (c: unknown) => Promise<void>
+        }
+      ).computeAsync(this.computeUpdate)
+    }
   }
 
   autoEmit(delta: number): void {
@@ -299,11 +354,16 @@ export class VFXParticleSystem {
   }
 
   clear(): void {
-    ;(
-      this.renderer as unknown as {
-        computeAsync: (c: unknown) => Promise<void>
-      }
-    ).computeAsync(this.computeInit)
+    if (this.isWebGL) {
+      cpuInit(this.cpuArrays!, this.normalizedProps.maxParticles)
+      markAllDirty(this.storage)
+    } else {
+      ;(
+        this.renderer as unknown as {
+          computeAsync: (c: unknown) => Promise<void>
+        }
+      ).computeAsync(this.computeInit)
+    }
     this.nextIndex = 0
   }
 
@@ -331,5 +391,4 @@ export class VFXParticleSystem {
   setCurveTexture(texture: THREE.DataTexture): void {
     this.curveTexture = texture
   }
-
 }

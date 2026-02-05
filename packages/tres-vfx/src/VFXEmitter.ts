@@ -1,9 +1,8 @@
-import { defineComponent, ref, watch, onMounted, onUnmounted, h, type PropType } from 'vue'
+import { defineComponent, ref, watch, onMounted, h, type PropType } from 'vue'
 import { useLoop, useTresContext } from '@tresjs/core'
 import { Vector3, Quaternion, Group } from 'three/webgpu'
 import {
   EmitterController,
-  isWebGPUBackend,
   coreStore,
   type EmitterControllerOptions,
 } from 'core-vfx'
@@ -44,7 +43,6 @@ export const VFXEmitter = defineComponent({
     const { onBeforeRender } = useLoop()
 
     const groupRef = ref<Group | null>(null)
-    const isWebGPU = ref(false)
 
     const controller = new EmitterController({
       emitCount: props.emitCount,
@@ -61,7 +59,9 @@ export const VFXEmitter = defineComponent({
       if (props.particlesRef) {
         return props.particlesRef.value || props.particlesRef
       }
-      return props.name ? coreStore.getState().getParticles(props.name) : undefined
+      return props.name
+        ? coreStore.getState().getParticles(props.name)
+        : undefined
     }
 
     // Watch option changes
@@ -90,33 +90,27 @@ export const VFXEmitter = defineComponent({
       }
     )
 
-    function checkWebGPU() {
-      const r = renderer.instance
-      if (r && isWebGPUBackend(r)) {
-        isWebGPU.value = true
-        const system = getParticleSystem()
-        if (system) controller.setSystem(system)
-      }
+    function linkSystem() {
+      const system = getParticleSystem()
+      if (system) controller.setSystem(system)
     }
 
     onMounted(() => {
       // Cast needed: isInitialized/onReady exist at runtime but tsup DTS doesn't resolve them
       const mgr = renderer as any
       if (mgr.isInitialized?.value) {
-        checkWebGPU()
+        linkSystem()
       } else if (mgr.onReady) {
         mgr.onReady(() => {
-          checkWebGPU()
+          linkSystem()
         })
       } else {
-        checkWebGPU()
+        linkSystem()
       }
     })
 
     // Frame loop
     onBeforeRender(({ delta }) => {
-      if (!isWebGPU.value) return
-
       // Re-resolve system if not linked yet
       if (!controller.getSystem()) {
         const system = getParticleSystem()
@@ -215,32 +209,6 @@ export const VFXEmitter = defineComponent({
  * burst([0, 0, 0], 100, { colorStart: ["#ff0000"] });
  */
 export function useVFXEmitter(name: string) {
-  const { renderer } = useTresContext()
-
-  const isWebGPU = ref(false)
-
-  onMounted(() => {
-    // Cast needed: isInitialized/onReady exist at runtime but tsup DTS doesn't resolve them
-    const mgr = renderer as any
-    if (mgr.isInitialized?.value) {
-      const r = renderer.instance
-      if (r && isWebGPUBackend(r)) {
-        isWebGPU.value = true
-      }
-    } else if (mgr.onReady) {
-      mgr.onReady((r: any) => {
-        if (isWebGPUBackend(r)) {
-          isWebGPU.value = true
-        }
-      })
-    } else {
-      const r = renderer.instance
-      if (r && isWebGPUBackend(r)) {
-        isWebGPU.value = true
-      }
-    }
-  })
-
   const getParticles = () => coreStore.getState().getParticles(name)
 
   const emit = (
@@ -248,7 +216,6 @@ export function useVFXEmitter(name: string) {
     count = 20,
     overrides: Record<string, unknown> | null = null
   ) => {
-    if (!isWebGPU.value) return false
     const [x, y, z] = position
     return coreStore.getState().emit(name, { x, y, z, count, overrides })
   }
@@ -258,34 +225,28 @@ export function useVFXEmitter(name: string) {
     count = 50,
     overrides: Record<string, unknown> | null = null
   ) => {
-    if (!isWebGPU.value) return false
     const [x, y, z] = position
     return coreStore.getState().emit(name, { x, y, z, count, overrides })
   }
 
   const start = () => {
-    if (!isWebGPU.value) return false
     return coreStore.getState().start(name)
   }
 
   const stop = () => {
-    if (!isWebGPU.value) return false
     return coreStore.getState().stop(name)
   }
 
   const clear = () => {
-    if (!isWebGPU.value) return false
     return coreStore.getState().clear(name)
   }
 
   const isEmitting = () => {
-    if (!isWebGPU.value) return false
     const particles = getParticles()
     return particles?.isEmitting ?? false
   }
 
   const getUniforms = () => {
-    if (!isWebGPU.value) return null
     const particles = getParticles()
     return particles?.uniforms ?? null
   }
@@ -298,7 +259,7 @@ export function useVFXEmitter(name: string) {
     clear,
     isEmitting,
     getUniforms,
-    getParticles: () => (isWebGPU.value ? getParticles() : null),
+    getParticles,
   }
 }
 

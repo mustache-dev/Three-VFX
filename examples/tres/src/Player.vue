@@ -82,37 +82,41 @@ function onAnimationFinished(e: { action: THREE.AnimationAction }) {
 }
 
 // Setup model when loaded
-watch(gltfState, (state) => {
-  if (!state?.scene) return
+watch(
+  gltfState,
+  (state) => {
+    if (!state?.scene) return
 
-  const scene = state.scene
+    const scene = state.scene
 
-  // Setup shadows and hide sword
-  scene.traverse((child: THREE.Object3D) => {
-    if ('isMesh' in child && (child as THREE.Mesh).isMesh) {
-      child.castShadow = true
-      child.receiveShadow = true
+    // Setup shadows and hide sword
+    scene.traverse((child: THREE.Object3D) => {
+      if ('isMesh' in child && (child as THREE.Mesh).isMesh) {
+        child.castShadow = true
+        child.receiveShadow = true
+      }
+      if (child.name === 'Cylinder001') {
+        child.visible = false
+      }
+    })
+
+    // Setup animations
+    mixer = new THREE.AnimationMixer(scene)
+    mixer.addEventListener('finished', onAnimationFinished as any)
+
+    animActions = {}
+    for (const clip of state.animations) {
+      animActions[clip.name] = mixer.clipAction(clip)
     }
-    if (child.name === 'Cylinder001') {
-      child.visible = false
+
+    // Start animations
+    if (animActions['wind']) {
+      animActions['wind'].play()
     }
-  })
-
-  // Setup animations
-  mixer = new THREE.AnimationMixer(scene)
-  mixer.addEventListener('finished', onAnimationFinished as any)
-
-  animActions = {}
-  for (const clip of state.animations) {
-    animActions[clip.name] = mixer.clipAction(clip)
-  }
-
-  // Start animations
-  if (animActions['wind']) {
-    animActions['wind'].play()
-  }
-  playAnimation('idle-sword')
-}, { immediate: true })
+    playAnimation('idle-sword')
+  },
+  { immediate: true }
+)
 
 // Frame loop
 onBeforeRender(({ delta }) => {
@@ -136,7 +140,10 @@ onBeforeRender(({ delta }) => {
   const moveZ = (k.backward ? 1 : 0) - (k.forward ? 1 : 0)
   const speed = k.run ? runSpeed : walkSpeed
 
-  velocity.set(moveX, 0, moveZ).normalize().multiplyScalar(speed * delta)
+  velocity
+    .set(moveX, 0, moveZ)
+    .normalize()
+    .multiplyScalar(speed * delta)
 
   const isMoving = moveX !== 0 || moveZ !== 0
 
@@ -169,7 +176,12 @@ onBeforeRender(({ delta }) => {
   const cam = cameraCtx.activeCamera.value
   if (cam && meshRef.value) {
     cam.position.x = damp(cam.position.x, meshRef.value.position.x, 4, delta)
-    cam.position.z = damp(cam.position.z, meshRef.value.position.z + 5, 4, delta)
+    cam.position.z = damp(
+      cam.position.z,
+      meshRef.value.position.z + 5,
+      4,
+      delta
+    )
   }
 })
 

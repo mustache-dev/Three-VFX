@@ -28,6 +28,11 @@ export type {
 } from 'core-vfx'
 
 // Re-export classes and curve utilities for advanced usage
-export { VFXParticleSystem, EmitterController, isWebGPUBackend, resolveCurveTexture } from 'core-vfx'
+export {
+  VFXParticleSystem,
+  EmitterController,
+  isWebGPUBackend,
+  resolveCurveTexture,
+} from 'core-vfx'
 
 export type { CurveTextureResolved } from 'core-vfx'

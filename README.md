@@ -13,9 +13,7 @@ Available for React Three Fiber (R3F), and experimentally for vanilla Three.js, 
 - 📊 **Curve-based Control** - Bezier curves for size, opacity, velocity, and rotation over lifetime
 - 🔗 **Emitter System** - Decoupled emitters that can share particle systems
 - ⚡ **WebGPU Native** - Built specifically for Three.js WebGPU renderer
-
-⚠️ Three VFX only supports WebGPU at the moment ([79% global support](https://caniuse.com/webgpu)). A `fallback` option is available to replace the particle systems with your own fallback objects for WebGL.
-
+- 🐢 **WebGL fallback** – Three VFX targets WebGPU ([79% global support](https://caniuse.com/webgpu)) but provides a CPU fallback
 
 ## Quick Start
 
@@ -65,8 +63,8 @@ npm install tres-vfx
 
 ```vue
 <script setup>
-  import { TresCanvas } from '@tresjs/core'
-  import { VFXParticles } from 'tres-vfx'
+import { TresCanvas } from '@tresjs/core'
+import { VFXParticles } from 'tres-vfx'
 </script>
 
 <template>
