@@ -188,10 +188,8 @@ export const VFXEmitter = forwardRef(function VFXEmitter(
 
   // Render a group that inherits parent transforms
   return (
-    // @ts-expect-error
     <group ref={groupRef} position={position}>
       {children}
-      {/* @ts-expect-error */}
     </group>
   )
 })

@@ -24,6 +24,8 @@ export type {
   FrictionConfig,
   FlipbookConfig,
   StretchConfig,
+  TrailConfig,
+  TrailData,
   BaseParticleProps,
   NormalizedParticleProps,
   VFXParticleSystemOptions,
@@ -66,6 +68,9 @@ export {
   createUpdateCompute,
   createParticleMaterial,
   selectColor,
+  createTrailProceduralPositionNode,
+  createTrailHistoryCompute,
+  createTrailHistoryPositionNode,
 } from './shaders'
 
 // Shader types

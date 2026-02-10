@@ -150,6 +150,9 @@ export function createUniforms(
     collisionFriction: uniform(props.collision?.friction ?? 0.8),
     collisionDie: uniform(props.collision?.die ? 1 : 0),
     sizeBasedGravity: uniform(props.collision?.sizeBasedGravity ?? 0),
+    // Trail uniforms
+    trailLength: uniform(props.trail?.length ?? 0.5),
+    trailHead: uniform(0),
   }
 }
 
@@ -487,6 +490,9 @@ export function updateUniformsPartial(
     u.collisionFriction.value = rawProps.collision?.friction ?? 0.8
     u.collisionDie.value = rawProps.collision?.die ? 1 : 0
     u.sizeBasedGravity.value = rawProps.collision?.sizeBasedGravity ?? 0
+  }
+  if ('trail' in rawProps && rawProps.trail) {
+    u.trailLength.value = rawProps.trail.length ?? 0.5
   }
 }
 

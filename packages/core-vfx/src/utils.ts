@@ -291,6 +291,7 @@ export const normalizeProps = (
     lighting,
     shadow,
     blending,
+    trail: props.trail ?? null,
     depthTest: true,
     renderOrder: 0,
     colorStart,

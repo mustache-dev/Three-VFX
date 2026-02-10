@@ -14,5 +14,12 @@ export { createInitCompute } from './init'
 export { createSpawnCompute } from './spawn'
 export { createUpdateCompute } from './update'
 
+// Trail shader factories
+export {
+  createTrailProceduralPositionNode,
+  createTrailHistoryCompute,
+  createTrailHistoryPositionNode,
+} from './trail'
+
 // Material factory
 export { createParticleMaterial } from './material'

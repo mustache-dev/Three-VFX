@@ -40,7 +40,13 @@
     "@react-three/fiber": ">=9.0.0 || >=10.0.0",
     "react": ">=19.0.0",
     "react-dom": ">=19.0.0",
-    "three": ">=0.182.0"
+    "three": ">=0.182.0",
+    "makio-meshline": ">=1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "makio-meshline": {
+      "optional": true
+    }
   },
   "keywords": [
     "3d",

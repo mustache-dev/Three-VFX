@@ -198,6 +198,7 @@ const propOrder = [
   'emitterSurfaceOnly',
   'turbulence',
   'collision',
+  'trail',
   'softParticles',
   'softDistance',
   'attractToCenter',
@@ -296,6 +297,7 @@ const shouldSkipDefault = (
   // Effects defaults (disabled)
   if (key === 'turbulence' && isDefaultTurbulence(value as Values)) return true
   if (key === 'collision' && !value) return true
+  if (key === 'trail' && !value) return true
   if (key === 'softParticles' && value === false) return true
   if (key === 'softDistance' && !values.softParticles) return true
   if (key === 'attractToCenter' && value === false) return true
