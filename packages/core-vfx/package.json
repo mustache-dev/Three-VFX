@@ -33,6 +33,12 @@
     "typescript": "5.9.3"
   },
   "peerDependencies": {
-    "three": ">=0.182.0"
+    "three": ">=0.182.0",
+    "makio-meshline": ">=1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "makio-meshline": {
+      "optional": true
+    }
   }
 }

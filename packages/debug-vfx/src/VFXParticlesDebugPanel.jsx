@@ -93,6 +93,7 @@ export const DEFAULT_VALUES = Object.freeze({
   softParticles: false,
   softDistance: 0.5,
   collision: null,
+  trail: null,
 })
 
 // Global state for the debug panel
@@ -3230,6 +3231,7 @@ const DebugPanelContent = ({ initialValues, onUpdate, mode = 'r3f' }) => {
     ],
     Turbulence: ['turbulence', 'noise', 'frequency', 'intensity', 'speed'],
     Collision: ['collision', 'bounce', 'plane', 'friction', 'die', 'gravity'],
+    Trail: ['trail', 'line', 'meshline', 'ribbon', 'tail', 'segments', 'taper'],
     Effects: [
       'effects',
       'soft',
@@ -4424,6 +4426,77 @@ const DebugPanelContent = ({ initialValues, onUpdate, mode = 'r3f' }) => {
               label="Die on Collision"
               value={values.collision?.die}
               onChange={(v) => updateNested('collision', 'die', v)}
+            />
+          </Section>
+
+          {/* Trail (Optional) */}
+          <Section
+            title="Trail"
+            defaultOpen={false}
+            optional={true}
+            enabled={!!values.trail}
+            onToggleEnabled={(enabled) =>
+              update(
+                'trail',
+                enabled
+                  ? {
+                      segments: 32,
+                      width: 0.1,
+                      taper: true,
+                      opacity: 1,
+                      mode: 'procedural',
+                      length: 0.5,
+                      showParticles: true,
+                    }
+                  : null
+              )
+            }
+            hidden={!matchesSearch('Trail')}
+          >
+            <SelectInput
+              label="Mode"
+              value={values.trail?.mode || 'procedural'}
+              onChange={(v) => updateNested('trail', 'mode', v)}
+              options={{ Procedural: 'procedural', History: 'history' }}
+            />
+            <NumberInput
+              label="Segments"
+              value={values.trail?.segments || 32}
+              onChange={(v) => updateNested('trail', 'segments', Math.round(v))}
+              min={4}
+              max={256}
+              step={1}
+            />
+            <NumberInput
+              label="Width"
+              value={values.trail?.width || 0.1}
+              onChange={(v) => updateNested('trail', 'width', v)}
+              min={0.001}
+              max={2}
+            />
+            <NumberInput
+              label="Length"
+              value={values.trail?.length || 0.5}
+              onChange={(v) => updateNested('trail', 'length', v)}
+              min={0.01}
+              max={5}
+            />
+            <NumberInput
+              label="Opacity"
+              value={values.trail?.opacity ?? 1}
+              onChange={(v) => updateNested('trail', 'opacity', v)}
+              min={0}
+              max={1}
+            />
+            <CheckboxInput
+              label="Taper"
+              value={values.trail?.taper !== false}
+              onChange={(v) => updateNested('trail', 'taper', v)}
+            />
+            <CheckboxInput
+              label="Show Particles"
+              value={values.trail?.showParticles !== false}
+              onChange={(v) => updateNested('trail', 'showParticles', v)}
             />
           </Section>
 

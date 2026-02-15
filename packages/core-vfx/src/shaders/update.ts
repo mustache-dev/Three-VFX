@@ -27,6 +27,8 @@ const DEFAULT_FEATURES: ShaderFeatures = {
   perParticleColor: true,
   needsPerParticleColor: true,
   needsRotation: true,
+  trails: false,
+  trailHistory: false,
 }
 
 /**

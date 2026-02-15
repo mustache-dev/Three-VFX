@@ -21,6 +21,9 @@ import {
   createSpawnCompute,
   createUpdateCompute,
   createParticleMaterial,
+  createTrailProceduralPositionNode,
+  createTrailHistoryCompute,
+  createTrailHistoryPositionNode,
 } from './shaders'
 import {
   createCombinedCurveTexture,
@@ -59,6 +62,13 @@ export class VFXParticleSystem {
   readonly options: VFXParticleSystemOptions
   readonly normalizedProps: NormalizedParticleProps
 
+  // Trail state
+  trailRenderObject: THREE.Object3D | null = null
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private computeTrailHistory: any = null
+  private trailHeadValue = 0
+  private trailSegments = 0
+
   // Internal state
   private renderer: THREE.WebGPURenderer
   nextIndex = 0
@@ -96,8 +106,15 @@ export class VFXParticleSystem {
     // Create uniforms
     this.uniforms = createUniforms(np)
 
+    // Trail config
+    this.trailSegments = options.trail?.segments ?? 32
+
     // Create storage arrays
-    this.storage = createStorageArrays(np.maxParticles, this.features)
+    this.storage = createStorageArrays(
+      np.maxParticles,
+      this.features,
+      this.trailSegments
+    )
 
     // Handle curve texture synchronously (bake inline curves or use defaults)
     if (
@@ -238,6 +255,184 @@ export class VFXParticleSystem {
       }
     }
 
+    // Initialize trail MeshLine if trails are enabled (WebGPU only)
+    if (this.features.trails && !this.isWebGL) {
+      try {
+        const { MeshLine } = await import('makio-meshline')
+        const { Fn, float, instanceIndex } = await import('three/tsl')
+
+        const trail = this.options.trail!
+        const segments = this.trailSegments
+        const maxParticles = this.normalizedProps.maxParticles
+
+        // Create gpuPositionNode based on mode
+        let positionNode
+        if (trail.mode === 'history') {
+          // History mode: ring buffer
+          this.computeTrailHistory = createTrailHistoryCompute(
+            this.storage,
+            this.uniforms,
+            maxParticles,
+            segments
+          )
+          positionNode = createTrailHistoryPositionNode(
+            this.storage,
+            this.uniforms,
+            segments
+          )
+        } else {
+          // Procedural mode (default): reconstruct from velocity + gravity
+          positionNode = createTrailProceduralPositionNode(
+            this.storage,
+            this.uniforms
+          )
+        }
+
+        // Width function: taper trail from head to tail
+        const taper = trail.taper !== false
+        const widthFn = taper
+          ? Fn(([width]: [any]) => {
+              const lifetime = this.storage.lifetimes.element(instanceIndex)
+              // Hide dead particles by setting width to 0
+              return lifetime.greaterThan(0).select(
+                width
+                  .mul(
+                    float(1)
+                      .sub(
+                        width.div(width)
+                        // width comes in as the interpolated width value
+                        // We use the built-in progress for tapering
+                      )
+                      .add(float(1))
+                  )
+                  .mul(float(0.5)),
+                float(0)
+              )
+            })
+          : undefined
+
+        // Color function: replicate particle material color logic
+        const { mix } = await import('three/tsl')
+        const colorFn = Fn(([color, trailProgress]: [any, any]) => {
+          const lifetime = this.storage.lifetimes.element(instanceIndex)
+
+          // Compute particle lifetime progress (same as material.ts)
+          const lifeProgress = float(1).sub(lifetime)
+
+          // Resolve particle color: mix(colorStart, colorEnd, lifeProgress)
+          const pColorStart =
+            this.storage.particleColorStarts?.element(instanceIndex)
+          const pColorEnd =
+            this.storage.particleColorEnds?.element(instanceIndex)
+
+          const particleColor =
+            pColorStart && pColorEnd
+              ? mix(pColorStart, pColorEnd, lifeProgress)
+              : mix(
+                  this.uniforms.colorStart0,
+                  this.uniforms.colorEnd0 ?? this.uniforms.colorStart0,
+                  lifeProgress
+                )
+
+          // Apply intensity
+          const intensified = particleColor.mul(this.uniforms.intensity)
+
+          // Fade along trail (head=1, tail=0) and hide dead particles
+          const fade = float(1)
+            .sub(trailProgress)
+            .mul(lifetime.greaterThan(0).select(float(1), float(0)))
+
+          return intensified.mul(fade)
+        })
+
+        // Fragment color function: wraps user callback with particle data
+        let fragmentColorFnWrapped
+        if (trail.fragmentColorFn) {
+          const userFragFn = trail.fragmentColorFn
+          fragmentColorFnWrapped = Fn(
+            ([color, uvCoords, vProgress, side]: [any, any, any, any]) => {
+              const lifetime2 = this.storage.lifetimes.element(instanceIndex)
+              const lifeProgress2 = float(1).sub(lifetime2)
+              const pColorStart2 =
+                this.storage.particleColorStarts?.element(instanceIndex)
+              const pColorEnd2 =
+                this.storage.particleColorEnds?.element(instanceIndex)
+              const pColor =
+                pColorStart2 && pColorEnd2
+                  ? mix(pColorStart2, pColorEnd2, lifeProgress2)
+                  : mix(
+                      this.uniforms.colorStart0,
+                      this.uniforms.colorEnd0 ?? this.uniforms.colorStart0,
+                      lifeProgress2
+                    )
+              const intensified2 = pColor.mul(this.uniforms.intensity)
+
+              return userFragFn({
+                color,
+                uv: uvCoords,
+                trailProgress: vProgress,
+                side,
+                progress: lifeProgress2,
+                lifetime: lifetime2,
+                position: this.storage.positions.element(instanceIndex),
+                velocity: this.storage.velocities.element(instanceIndex),
+                size: this.storage.particleSizes.element(instanceIndex),
+                ...(pColorStart2 && { colorStart: pColorStart2 }),
+                ...(pColorEnd2 && { colorEnd: pColorEnd2 }),
+                particleColor: pColor,
+                intensifiedColor: intensified2,
+                index: instanceIndex,
+              })
+            }
+          )
+        }
+
+        // Build MeshLine
+        const line = new MeshLine()
+          .segments(segments)
+          .gpuPositionNode(positionNode)
+          .colorFn(colorFn)
+          .instances(maxParticles)
+          .lineWidth(trail.width ?? 0.1)
+          .sizeAttenuation(true)
+          .opacity(trail.opacity ?? 1)
+          .transparent(true)
+
+        if (fragmentColorFnWrapped) {
+          line.fragmentColorFn(fragmentColorFnWrapped)
+          line.needsUV(true)
+        }
+
+        if (taper) {
+          line.widthCallback((t: number) => 1 - t)
+        }
+
+        // @ts-ignore - MeshLine types declare frustumCulled as method, but build() expects the property
+        line.frustumCulled = false
+        line.build()
+
+        const mat = line.material as THREE.Material
+        mat.blending = THREE.AdditiveBlending
+        mat.depthWrite = false
+
+        this.trailRenderObject = line as unknown as THREE.Object3D
+      } catch (err) {
+        if (
+          err instanceof Error &&
+          (err.message.includes('Failed to fetch') ||
+            err.message.includes('Cannot find') ||
+            err.message.includes('Failed to resolve') ||
+            err.message.includes('Module not found'))
+        ) {
+          console.warn(
+            'makio-meshline not found. Install it to enable trail rendering: bun add makio-meshline'
+          )
+        } else {
+          console.error('Trail initialization failed:', err)
+        }
+      }
+    }
+
     this.initialized = true
   }
 
@@ -250,6 +445,13 @@ export class VFXParticleSystem {
         this.renderObject.geometry.dispose()
       }
     }
+    if (this.trailRenderObject) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const trail = this.trailRenderObject as any
+      if (trail.dispose) trail.dispose()
+      this.trailRenderObject = null
+    }
+    this.computeTrailHistory = null
     this.initialized = false
     this.nextIndex = 0
   }
@@ -322,6 +524,19 @@ export class VFXParticleSystem {
           computeAsync: (c: unknown) => Promise<void>
         }
       ).computeAsync(this.computeUpdate)
+
+      // Trail history mode: write current positions to ring buffer
+      if (this.computeTrailHistory) {
+        await (
+          this.renderer as unknown as {
+            computeAsync: (c: unknown) => Promise<void>
+          }
+        ).computeAsync(this.computeTrailHistory)
+
+        // Advance ring buffer head pointer
+        this.trailHeadValue = (this.trailHeadValue + 1) % this.trailSegments
+        u.trailHead.value = this.trailHeadValue
+      }
     }
   }
 

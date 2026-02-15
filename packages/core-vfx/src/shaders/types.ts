@@ -14,6 +14,7 @@ export type ParticleStorageArrays = {
   particleRotations: StorageBufferNode | null
   particleColorStarts: StorageBufferNode | null
   particleColorEnds: StorageBufferNode | null
+  trailHistory: StorageBufferNode | null
 }
 
 // All uniforms used by the particle system
@@ -28,6 +29,8 @@ export type ShaderFeatures = {
   collision: boolean // Plane collision with bounce/die
   rotation: boolean // Per-particle rotation and rotation speed
   perParticleColor: boolean // Per-particle color arrays (vs single uniform color)
+  trails: boolean // Trail rendering via makio-meshline
+  trailHistory: boolean // Trail history ring buffer (vs procedural)
   // Storage array features (used by createStorageArrays)
   needsPerParticleColor: boolean
   needsRotation: boolean

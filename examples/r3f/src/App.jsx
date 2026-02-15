@@ -8,6 +8,18 @@ import { Floor } from './Floor'
 import Player from './Player'
 import { Boom } from './Boom'
 import { VFXParticles } from 'r3f-vfx'
+import {
+  fract,
+  mix,
+  mul,
+  sin,
+  texture,
+  time,
+  uv,
+  vec2,
+  vec3,
+  vec4,
+} from 'three/tsl'
 
 function FallbackSprite() {
   const texture = useLoader(THREE.TextureLoader, './fallback.png')
@@ -28,6 +40,8 @@ const keyboardMap = [
 ]
 
 export default function App() {
+  const tex = useLoader(THREE.TextureLoader, './trail.png')
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping
   return (
     <>
       <Canvas shadows renderer={{ forceWebGL: false }}>
@@ -38,10 +52,41 @@ export default function App() {
           <KeyboardControls map={keyboardMap}>
             <Player />
           </KeyboardControls>
-          <Boom />
-          <group position={[5, 0, 0]}>
+          {/* <Boom />*/}
+          <VFXParticles
+            emitCount={100}
+            delay={1}
+            intensity={9.8}
+            colorStart={['#ff6600']}
+            gravity={[0, -20, 0]}
+            speed={[1, 4]}
+            lifetime={[3.3, 4.7]}
+            appearance="gradient"
+            lighting="standard"
+            emitterShape={1}
+            collision={{
+              plane: {
+                y: -1,
+              },
+              bounce: 0.6,
+              friction: 0.8,
+              die: false,
+              sizeBasedGravity: 0,
+            }}
+            trail={{
+              segments: 32,
+              width: 0.1,
+              taper: true,
+              opacity: 1,
+              mode: 'history',
+              length: 0.5,
+              showParticles: false,
+            }}
+          />
+
+          {/* <group position={[5, 0, 0]}>
             <VFXParticles debug fallback={<FallbackSprite />} />
-          </group>
+          </group>*/}
         </Suspense>
       </Canvas>
 

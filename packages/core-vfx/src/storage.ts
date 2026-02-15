@@ -1,7 +1,7 @@
 import * as THREE from 'three/webgpu'
 import { instancedArray } from 'three/tsl'
 import type { ParticleStorageArrays, ShaderFeatures } from './shaders/types'
-import type { Rotation3DInput } from './types'
+import type { Rotation3DInput, TrailConfig } from './types'
 import { isNonDefaultRotation } from './utils'
 
 // Keys whose change requires full system recreation (GPU pipeline rebuild)
@@ -33,6 +33,7 @@ export function resolveFeatures(props: {
     die?: boolean
     sizeBasedGravity?: number
   } | null
+  trail?: TrailConfig
 }): ShaderFeatures {
   const colorStart = props.colorStart ?? ['#ffffff']
   const colorEnd = props.colorEnd ?? null
@@ -48,6 +49,9 @@ export function resolveFeatures(props: {
   const hasTurbulence = turbulence !== null && (turbulence?.intensity ?? 0) > 0
   const hasAttractors = attractors !== null && attractors.length > 0
   const hasCollision = collision !== null
+  const trail = props.trail ?? null
+  const hasTrails = trail !== null
+  const hasTrailHistory = hasTrails && trail.mode === 'history'
 
   return {
     needsPerParticleColor,
@@ -57,6 +61,8 @@ export function resolveFeatures(props: {
     collision: hasCollision,
     rotation: needsRotation,
     perParticleColor: needsPerParticleColor,
+    trails: hasTrails,
+    trailHistory: hasTrailHistory,
   }
 }
 
@@ -85,13 +91,16 @@ export function needsRecreation(
     newFeatures.needsPerParticleColor !== currentFeatures.needsPerParticleColor
   )
     return true
+  if (newFeatures.trails !== currentFeatures.trails) return true
+  if (newFeatures.trailHistory !== currentFeatures.trailHistory) return true
 
   return false
 }
 
 export function createStorageArrays(
   maxParticles: number,
-  features: ShaderFeatures
+  features: ShaderFeatures,
+  trailSegments = 32
 ): ParticleStorageArrays {
   const arrays: ParticleStorageArrays = {
     positions: instancedArray(maxParticles, 'vec3'),
@@ -102,6 +111,7 @@ export function createStorageArrays(
     particleRotations: null,
     particleColorStarts: null,
     particleColorEnds: null,
+    trailHistory: null,
   }
 
   if (features.needsRotation) {
@@ -111,6 +121,10 @@ export function createStorageArrays(
   if (features.needsPerParticleColor) {
     arrays.particleColorStarts = instancedArray(maxParticles, 'vec3')
     arrays.particleColorEnds = instancedArray(maxParticles, 'vec3')
+  }
+
+  if (features.trailHistory) {
+    arrays.trailHistory = instancedArray(maxParticles * trailSegments, 'vec3')
   }
 
   return arrays

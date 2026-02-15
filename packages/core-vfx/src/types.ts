@@ -49,6 +49,46 @@ export type CollisionConfig = {
   sizeBasedGravity?: number
 } | null
 
+// Trail data exposed to fragmentColorFn callback
+export type TrailData = {
+  color: unknown // vec3: resolved trail color (after colorFn)
+  uv: unknown // vec2: UV coordinates along the trail
+  trailProgress: unknown // float: 0 (head) → 1 (tail)
+  side: unknown // float: -1 or 1 (which side of the line)
+  // Particle data (same as particle material)
+  progress: unknown // float: particle lifetime progress 0→1
+  lifetime: unknown // float: remaining lifetime
+  position: unknown // vec3: particle position
+  velocity: unknown // vec3: particle velocity
+  size: unknown // float: particle size
+  colorStart?: unknown // vec3: per-particle start color (if enabled)
+  colorEnd?: unknown // vec3: per-particle end color (if enabled)
+  particleColor: unknown // vec3: resolved particle color (mix of start→end)
+  intensifiedColor: unknown // vec3: particleColor * intensity
+  index: unknown // uint: instanceIndex
+}
+
+// Trail configuration
+export type TrailConfig = {
+  /** Number of trail segments / line resolution (default: 32) */
+  segments?: number
+  /** Trail line width (default: 0.1) */
+  width?: number
+  /** Whether width tapers to 0 at tail (default: true) */
+  taper?: boolean
+  /** Trail opacity (default: 1) */
+  opacity?: number
+  /** Trail computation mode (default: 'procedural') */
+  mode?: 'procedural' | 'history'
+  /** Trail length in seconds of history (default: 0.5) */
+  length?: number
+  /** Show particles alongside trails (default: true) */
+  showParticles?: boolean
+  /** Fragment color function - runs in fragment shader for per-pixel trail coloring.
+   *  Receives particle data + meshline data. Enables needsUV automatically. */
+  fragmentColorFn?: ((data: TrailData) => unknown) | null
+} | null
+
 // Friction configuration
 export type FrictionConfig = {
   intensity?: number | [number, number]
@@ -120,6 +160,7 @@ export type NormalizedParticleProps = {
   renderOrder: number
   colorStart: string[]
   colorEnd: string[] | null
+  trail: TrailConfig
   // Raw prop values for debug panel
   size: number | [number, number]
   speed: number | [number, number]
@@ -270,4 +311,6 @@ export type BaseParticleProps = {
   softDistance?: number
   /** Plane collision settings */
   collision?: CollisionConfig
+  /** Trail rendering via makio-meshline */
+  trail?: TrailConfig
 }

@@ -110,6 +110,7 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
       softParticles = false,
       softDistance = 0.5,
       collision = null,
+      trail = null,
       debug = false,
       curveTexturePath = null,
       depthTest = true,
@@ -148,6 +149,9 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
       attractors !== null && attractors.length > 0
     )
     const [activeCollision, setActiveCollision] = useState(collision !== null)
+    const [activeTrail, setActiveTrail] = useState(
+      trail ? JSON.stringify(trail) : null
+    )
     const [activeNeedsPerParticleColor, setActiveNeedsPerParticleColor] =
       useState(colorStart.length > 1 || colorEnd !== null)
     const [activeNeedsRotation, setActiveNeedsRotation] = useState(
@@ -178,6 +182,7 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
         )
         setActiveAttractors(attractors !== null && attractors.length > 0)
         setActiveCollision(collision !== null)
+        setActiveTrail(trail ? JSON.stringify(trail) : null)
       }
     }, [
       debug,
@@ -198,6 +203,7 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
       turbulence,
       attractors,
       collision,
+      trail,
     ])
 
     // Create/recreate system when structural props change
@@ -256,6 +262,7 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
             softParticles: dbg?.softParticles ?? softParticles,
             softDistance: dbg?.softDistance ?? softDistance,
             collision: dbg?.collision ?? collision,
+            trail: dbg?.trail ?? trail,
             backdropNode,
             opacityNode,
             colorNode,
@@ -282,6 +289,7 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
         activeTurbulence,
         activeAttractors,
         activeCollision,
+        activeTrail,
         activeFadeSizeCurve,
         activeFadeOpacityCurve,
         activeVelocityCurve,
@@ -299,9 +307,14 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
       ]
     )
 
+    // Track trail render object availability (set async in init)
+    const [trailObject, setTrailObject] = useState<THREE.Object3D | null>(null)
+
     // Initialize on mount (and after recreation)
     useEffect(() => {
-      system.init()
+      system.init().then(() => {
+        setTrailObject(system.trailRenderObject)
+      })
     }, [system])
 
     // Update uniforms when non-structural props change (skip in debug mode)
@@ -341,6 +354,7 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
         softParticles,
         softDistance,
         collision,
+        trail,
         orientAxis,
         stretchBySpeed,
       })
@@ -363,6 +377,7 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
       colorStart,
       colorEnd,
       collision,
+      trail,
       emitterShape,
       emitterRadius,
       emitterAngle,
@@ -563,6 +578,12 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
         if (newFeatures.collision !== activeCollision) {
           setActiveCollision(newFeatures.collision)
         }
+        const newTrailStr = debugValuesRef.current?.trail
+          ? JSON.stringify(debugValuesRef.current.trail)
+          : null
+        if (newTrailStr !== activeTrail) {
+          setActiveTrail(newTrailStr)
+        }
 
         // Position update
         if (newValues.position) {
@@ -667,6 +688,7 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
         activeTurbulence,
         activeAttractors,
         activeCollision,
+        activeTrail,
         geometry,
       ]
     )
@@ -721,6 +743,7 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
             softParticles,
             softDistance,
             collision,
+            trail,
             ...detectGeometryTypeAndArgs(geometry),
           }
 
@@ -750,7 +773,19 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
       })
     }, [debug, handleDebugUpdate])
 
-    // @ts-expect-error
-    return <primitive ref={spriteRef} object={system.renderObject} />
+    // Hide particles when trail.showParticles is false
+    const trailConfig = debug ? debugValuesRef.current?.trail : trail
+    const showParticles = trailConfig?.showParticles !== false
+
+    if (system.renderObject) {
+      system.renderObject.visible = showParticles
+    }
+
+    return (
+      <>
+        <primitive ref={spriteRef} object={system.renderObject} />
+        {trailObject && <primitive object={trailObject} />}
+      </>
+    )
   }
 )

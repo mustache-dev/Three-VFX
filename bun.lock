@@ -6,6 +6,8 @@
       "name": "root",
       "devDependencies": {
         "@changesets/cli": "2.29.8",
+        "core-vfx": "workspace:*",
+        "makio-meshline": "^1.2.0",
         "npm-run-all": "4.1.5",
         "prettier": "3.8.1",
       },
@@ -15,7 +17,8 @@
       "dependencies": {
         "@react-three/drei": "11.0.0-alpha.4",
         "@react-three/fiber": "10.0.0-alpha.2",
-        "r3f-vfx": "^0.1.9",
+        "makio-meshline": "^1.2.0",
+        "r3f-vfx": "^0.2.1",
         "react": "19.2.3",
         "react-dom": "19.2.3",
         "three": "0.182.0",
@@ -87,12 +90,16 @@
         "typescript": "5.9.3",
       },
       "peerDependencies": {
+        "makio-meshline": ">=1.0.0",
         "three": ">=0.182.0",
       },
+      "optionalPeers": [
+        "makio-meshline",
+      ],
     },
     "packages/debug-vfx": {
       "name": "debug-vfx",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
         "core-vfx": "0.1.0",
       },
@@ -112,10 +119,10 @@
     },
     "packages/r3f-vfx": {
       "name": "r3f-vfx",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "dependencies": {
-        "core-vfx": "0.0.10",
-        "debug-vfx": "0.0.10",
+        "core-vfx": "0.1.0",
+        "debug-vfx": "0.1.1",
         "zustand": "5.0.10",
       },
       "devDependencies": {
@@ -128,14 +135,18 @@
       },
       "peerDependencies": {
         "@react-three/fiber": ">=9.0.0 || >=10.0.0",
+        "makio-meshline": ">=1.0.0",
         "react": ">=19.0.0",
         "react-dom": ">=19.0.0",
         "three": ">=0.182.0",
       },
+      "optionalPeers": [
+        "makio-meshline",
+      ],
     },
     "packages/threlte-vfx": {
       "name": "threlte-vfx",
-      "version": "0.1.0",
+      "version": "0.2.1",
       "dependencies": {
         "core-vfx": "0.1.0",
         "debug-vfx": "0.1.0",
@@ -154,7 +165,7 @@
     },
     "packages/tres-vfx": {
       "name": "tres-vfx",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "core-vfx": "0.1.0",
         "debug-vfx": "0.1.0",
@@ -173,7 +184,7 @@
     },
     "packages/vanilla-vfx": {
       "name": "vanilla-vfx",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "core-vfx": "0.0.10",
         "debug-vfx": "0.0.10",
@@ -851,6 +862,8 @@
     "maath": ["maath@0.10.8", "", { "peerDependencies": { "@types/three": ">=0.134.0", "three": ">=0.134.0" } }, "sha512-tRvbDF0Pgqz+9XUa4jjfgAQ8/aPKmQdWXilFu2tMy4GWj4NOsx99HlULO4IeREfbO3a0sA145DZYyvXPkybm0g=="],
 
     "magic-string": ["magic-string@0.30.21", "", { "dependencies": { "@jridgewell/sourcemap-codec": "^1.5.5" } }, "sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ=="],
+
+    "makio-meshline": ["makio-meshline@1.2.0", "", { "peerDependencies": { "three": ">=0.180.0" } }, "sha512-pAG00Xseos1JC2Il7IFjsqMjqDNWzrHimXJPl4iftqiKUF7E/Davzmyxa1j5QNjt6wkUPijuurxU07lQERPXSA=="],
 
     "math-intrinsics": ["math-intrinsics@1.1.0", "", {}, "sha512-/IXtbwEk5HTPyEwyKX6hGkYXxM9nbj64B+ilVJnC/R6B0pH5G4V3b0pVbL7DBj4tkhBAppbQUlf6F6Xl9LHu1g=="],
 
