@@ -54,6 +54,10 @@ export const createUpdateCompute = (
       ? storage.particleRotations?.element(instanceIndex)
       : null
     const particleSize = storage.particleSizes.element(instanceIndex)
+    // Use stored seed if available (sort-stable), otherwise fall back to instanceIndex
+    const hashSeed = storage.particleSeeds
+      ? storage.particleSeeds.element(instanceIndex)
+      : float(instanceIndex)
     const dt = uniforms.deltaTime
 
     If(lifetime.greaterThan(0), () => {
@@ -265,21 +269,20 @@ export const createUpdateCompute = (
 
       // === ROTATION (conditional) ===
       if (particleRotation) {
-        const idx = float(instanceIndex)
         const rotSpeedX = mix(
           uniforms.rotationSpeedMinX,
           uniforms.rotationSpeedMaxX,
-          hash(idx.add(8888))
+          hash(hashSeed.add(8888))
         )
         const rotSpeedY = mix(
           uniforms.rotationSpeedMinY,
           uniforms.rotationSpeedMaxY,
-          hash(idx.add(9999))
+          hash(hashSeed.add(9999))
         )
         const rotSpeedZ = mix(
           uniforms.rotationSpeedMinZ,
           uniforms.rotationSpeedMaxZ,
-          hash(idx.add(10101))
+          hash(hashSeed.add(10101))
         )
 
         const rotSpeedCurveSample = texture(

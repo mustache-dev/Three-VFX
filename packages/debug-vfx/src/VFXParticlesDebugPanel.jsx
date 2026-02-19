@@ -94,6 +94,7 @@ export const DEFAULT_VALUES = Object.freeze({
   softDistance: 0.5,
   collision: null,
   trail: null,
+  sortParticles: false,
 })
 
 // Global state for the debug panel
@@ -4528,6 +4529,11 @@ const DebugPanelContent = ({ initialValues, onUpdate, mode = 'r3f' }) => {
               label="Attract to Center"
               value={values.attractToCenter}
               onChange={(v) => update('attractToCenter', v)}
+            />
+            <CheckboxInput
+              label="Sort Particles (CPU)"
+              value={values.sortParticles}
+              onChange={(v) => update('sortParticles', v)}
             />
           </Section>
         </div>

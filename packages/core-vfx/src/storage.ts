@@ -108,6 +108,7 @@ export function createStorageArrays(
     lifetimes: instancedArray(maxParticles, 'float'),
     fadeRates: instancedArray(maxParticles, 'float'),
     particleSizes: instancedArray(maxParticles, 'float'),
+    particleSeeds: null,
     particleRotations: null,
     particleColorStarts: null,
     particleColorEnds: null,

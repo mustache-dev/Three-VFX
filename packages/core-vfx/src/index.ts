@@ -99,6 +99,13 @@ export {
   STRUCTURAL_KEYS,
 } from './storage'
 
+// CPU sort
+export {
+  cpuRadixSortParticles,
+  createSortScratch,
+  type SortScratch,
+} from './cpu-sort'
+
 // Particle system class
 export { VFXParticleSystem } from './particle-system'
 

@@ -11,6 +11,7 @@ export type ParticleStorageArrays = {
   lifetimes: StorageBufferNode
   fadeRates: StorageBufferNode
   particleSizes: StorageBufferNode
+  particleSeeds: StorageBufferNode | null
   particleRotations: StorageBufferNode | null
   particleColorStarts: StorageBufferNode | null
   particleColorEnds: StorageBufferNode | null

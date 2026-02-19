@@ -45,7 +45,7 @@ export const Boom = () => {
 
     return vec4(
       finalColor.mul(endProgress.oneMinus()),
-      smokeColor.a.sub(endProgress)
+      smokeColor.a.sub(endProgress).mul(0.9)
     )
   }
 
@@ -85,11 +85,11 @@ export const Boom = () => {
     }
 
     if (t > 2) {
-      emit([0, -0.5, 0], 100, {
+      emit([0, -0.5, 0], 30, {
         emitterShape: 4,
         emitterRadius: [0, 0.01],
         size: [0.3, 0.4],
-        speed: [1.2, 1.2],
+        speed: [1.6, 1.6],
       })
       emit([0, 0, 0], 100)
       for (let i = 0; i < 5; i++) {
@@ -106,7 +106,7 @@ export const Boom = () => {
   })
   return (
     <VFXParticles
-      fallback={<FallbackSprite />}
+      sortParticles
       autoStart={false}
       name="boom"
       curveTexturePath={'./boom-2.bin'}
@@ -129,6 +129,7 @@ export const Boom = () => {
       appearance="default"
       lighting="basic"
       // blending={Blending.ADDITIVE}
+      // blending={}
       emitterShape={2}
       emitterRadius={[0, 0.21]}
       colorNode={({ progress }) => colorNode(progress)}

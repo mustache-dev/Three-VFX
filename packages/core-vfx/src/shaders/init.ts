@@ -15,6 +15,7 @@ export const createInitCompute = (
     const lifetime = storage.lifetimes.element(instanceIndex)
     const fadeRate = storage.fadeRates.element(instanceIndex)
     const particleSize = storage.particleSizes.element(instanceIndex)
+    const particleSeed = storage.particleSeeds?.element(instanceIndex)
     // Optional arrays (null when feature unused)
     const particleRotation = storage.particleRotations?.element(instanceIndex)
     const colorStart = storage.particleColorStarts?.element(instanceIndex)
@@ -26,6 +27,9 @@ export const createInitCompute = (
     lifetime.assign(float(0))
     fadeRate.assign(float(0))
     particleSize.assign(float(0))
+    if (particleSeed) {
+      particleSeed.assign(float(0))
+    }
 
     // Only initialize optional arrays if they exist
     if (particleRotation) {

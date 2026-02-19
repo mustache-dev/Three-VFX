@@ -202,6 +202,7 @@ const propOrder = [
   'softParticles',
   'softDistance',
   'attractToCenter',
+  'sortParticles',
 ]
 
 // Returns true if the key/value should be skipped (is at default)
@@ -301,6 +302,7 @@ const shouldSkipDefault = (
   if (key === 'softParticles' && value === false) return true
   if (key === 'softDistance' && !values.softParticles) return true
   if (key === 'attractToCenter' && value === false) return true
+  if (key === 'sortParticles' && value === false) return true
 
   return false
 }

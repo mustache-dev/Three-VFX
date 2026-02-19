@@ -1,4 +1,5 @@
 import * as THREE from 'three/webgpu'
+import { instancedArray } from 'three/tsl'
 import type {
   VFXParticleSystemOptions,
   NormalizedParticleProps,
@@ -41,6 +42,11 @@ import {
   markUpdateDirty,
   type CPUStorageArrays,
 } from './webgl-fallback'
+import {
+  cpuRadixSortParticles,
+  createSortScratch,
+  type SortScratch,
+} from './cpu-sort'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type UniformAccessor = Record<string, { value: any }>
@@ -79,6 +85,13 @@ export class VFXParticleSystem {
   position: [number, number, number]
   private isWebGL: boolean
   private cpuArrays: CPUStorageArrays | null = null
+
+  // Sort state
+  private sortEnabled: boolean
+  private sortScratch: SortScratch | null = null
+  private cameraPosition: [number, number, number] = [0, 0, 0]
+  // True when using CPU simulation (WebGL, or WebGPU with sort enabled)
+  private useCPUSimulation: boolean = false
 
   constructor(
     renderer: THREE.WebGPURenderer,
@@ -143,14 +156,36 @@ export class VFXParticleSystem {
     // Detect backend
     this.isWebGL = !isWebGPUBackend(renderer)
 
-    if (this.isWebGL) {
-      // CPU fallback: extract typed arrays, skip compute shader creation
-      this.cpuArrays = extractCPUArrays(this.storage)
+    // Sort setup — MUST happen before compute shader creation so shaders see particleSeeds
+    this.sortEnabled = options.sortParticles ?? false
+    if (this.sortEnabled) {
+      this.storage.particleSeeds = instancedArray(np.maxParticles, 'float')
+      this.sortScratch = createSortScratch(np.maxParticles)
+    }
+
+    // Use CPU simulation when:
+    // - WebGL backend (no compute shaders)
+    // - WebGPU with sort enabled (CPU arrays must stay in sync for CPU sort)
+    this.useCPUSimulation = this.isWebGL || this.sortEnabled
+    const useCPUSimulation = this.useCPUSimulation
+
+    if (useCPUSimulation) {
+      // CPU path: extract typed arrays, skip compute shader creation
+      this.cpuArrays = extractCPUArrays(
+        this.storage,
+        this.normalizedProps.maxParticles
+      )
       this.computeInit = null
       this.computeSpawn = null
       this.computeUpdate = null
+
+      // On WebGPU with CPU simulation, set DynamicDrawUsage so the renderer
+      // re-uploads buffer data every frame without relying on version checks
+      if (!this.isWebGL) {
+        this.setStorageDynamicUsage()
+      }
     } else {
-      // Create compute shaders (WebGPU path)
+      // Create compute shaders (WebGPU path, no sort)
       this.computeInit = createInitCompute(this.storage, np.maxParticles)
       this.computeSpawn = createSpawnCompute(
         this.storage,
@@ -212,8 +247,12 @@ export class VFXParticleSystem {
   async init(): Promise<void> {
     if (this.initialized) return
 
-    if (this.isWebGL) {
-      cpuInit(this.cpuArrays!, this.normalizedProps.maxParticles)
+    if (this.useCPUSimulation) {
+      this.cpuArrays = extractCPUArrays(
+        this.storage,
+        this.normalizedProps.maxParticles
+      )
+      cpuInit(this.cpuArrays, this.normalizedProps.maxParticles)
       markAllDirty(this.storage)
     } else {
       await (
@@ -479,12 +518,13 @@ export class VFXParticleSystem {
 
     this.nextIndex = endIdx
 
-    if (this.isWebGL) {
-      cpuSpawn(
-        this.cpuArrays!,
-        this.uniforms,
+    if (this.useCPUSimulation) {
+      // Re-extract CPU arrays in case WebGPU repacked vec3→vec4 stride
+      this.cpuArrays = extractCPUArrays(
+        this.storage,
         this.normalizedProps.maxParticles
       )
+      cpuSpawn(this.cpuArrays, this.uniforms, this.normalizedProps.maxParticles)
       markAllDirty(this.storage)
     } else {
       ;(
@@ -504,9 +544,14 @@ export class VFXParticleSystem {
     u.deltaTime.value = delta
     u.turbulenceTime.value += delta * this.turbulenceSpeed
 
-    if (this.isWebGL) {
+    if (this.useCPUSimulation) {
+      // Re-extract CPU arrays in case WebGPU repacked vec3→vec4 stride
+      this.cpuArrays = extractCPUArrays(
+        this.storage,
+        this.normalizedProps.maxParticles
+      )
       cpuUpdate(
-        this.cpuArrays!,
+        this.cpuArrays,
         this.uniforms,
         this.curveTexture,
         this.normalizedProps.maxParticles,
@@ -517,7 +562,25 @@ export class VFXParticleSystem {
           rotation: this.features.rotation,
         }
       )
-      markUpdateDirty(this.storage, this.features.rotation)
+
+      // CPU depth sort (CPU arrays are in sync since we use CPU simulation)
+      if (this.sortEnabled) {
+        if (!this.sortScratch) {
+          this.sortScratch = createSortScratch(
+            this.normalizedProps.maxParticles
+          )
+        }
+        cpuRadixSortParticles(
+          this.storage,
+          this.cameraPosition,
+          this.normalizedProps.maxParticles,
+          this.sortScratch
+        )
+        // After sort reorders, mark all buffers dirty for GPU upload
+        markAllDirty(this.storage)
+      } else {
+        markUpdateDirty(this.storage, this.features.rotation)
+      }
     } else {
       await (
         this.renderer as unknown as {
@@ -569,8 +632,12 @@ export class VFXParticleSystem {
   }
 
   clear(): void {
-    if (this.isWebGL) {
-      cpuInit(this.cpuArrays!, this.normalizedProps.maxParticles)
+    if (this.useCPUSimulation) {
+      this.cpuArrays = extractCPUArrays(
+        this.storage,
+        this.normalizedProps.maxParticles
+      )
+      cpuInit(this.cpuArrays, this.normalizedProps.maxParticles)
       markAllDirty(this.storage)
     } else {
       ;(
@@ -603,7 +670,47 @@ export class VFXParticleSystem {
     this.turbulenceSpeed = speed
   }
 
+  setSortEnabled(enabled: boolean): void {
+    // Note: sort must be enabled at construction time via sortParticles option.
+    // Enabling at runtime requires CPU simulation which must be set up in constructor.
+    if (enabled && !this.sortEnabled) {
+      console.warn(
+        'VFXParticleSystem: sortParticles must be enabled at construction time. ' +
+          'Use the sortParticles option in the constructor.'
+      )
+      return
+    }
+    this.sortEnabled = enabled
+  }
+
+  setCameraPosition(pos: [number, number, number]): void {
+    this.cameraPosition[0] = pos[0]
+    this.cameraPosition[1] = pos[1]
+    this.cameraPosition[2] = pos[2]
+  }
+
   setCurveTexture(texture: THREE.DataTexture): void {
     this.curveTexture = texture
+  }
+
+  /**
+   * Set DynamicDrawUsage on all storage buffers so the WebGPU renderer
+   * re-uploads CPU-side array data every frame.
+   */
+  private setStorageDynamicUsage(): void {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const setUsage = (node: any) => {
+      if (node?.value) node.value.usage = THREE.DynamicDrawUsage
+    }
+    setUsage(this.storage.positions)
+    setUsage(this.storage.velocities)
+    setUsage(this.storage.lifetimes)
+    setUsage(this.storage.fadeRates)
+    setUsage(this.storage.particleSizes)
+    if (this.storage.particleSeeds) setUsage(this.storage.particleSeeds)
+    if (this.storage.particleRotations) setUsage(this.storage.particleRotations)
+    if (this.storage.particleColorStarts)
+      setUsage(this.storage.particleColorStarts)
+    if (this.storage.particleColorEnds) setUsage(this.storage.particleColorEnds)
   }
 }

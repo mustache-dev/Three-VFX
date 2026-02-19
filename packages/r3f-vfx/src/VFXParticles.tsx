@@ -111,6 +111,7 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
       softDistance = 0.5,
       collision = null,
       trail = null,
+      sortParticles = false,
       debug = false,
       curveTexturePath = null,
       depthTest = true,
@@ -263,6 +264,7 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
             softDistance: dbg?.softDistance ?? softDistance,
             collision: dbg?.collision ?? collision,
             trail: dbg?.trail ?? trail,
+            sortParticles: dbg?.sortParticles ?? sortParticles,
             backdropNode,
             opacityNode,
             colorNode,
@@ -413,8 +415,12 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
     )
 
     // Update each frame + auto emit
-    useFrame(async (_state, delta) => {
+    useFrame(async (state, delta) => {
       if (!system.initialized) return
+
+      // Pass camera position for CPU depth sorting
+      const cam = state.camera.position
+      system.setCameraPosition([cam.x, cam.y, cam.z])
 
       await system.update(delta)
 
@@ -594,6 +600,8 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
         if ('delay' in newValues) system.setDelay(newValues.delay ?? 0)
         if ('emitCount' in newValues)
           system.setEmitCount(newValues.emitCount ?? 1)
+        if ('sortParticles' in newValues)
+          system.setSortEnabled(!!newValues.sortParticles)
 
         // Update emitting state
         if (newValues.autoStart !== undefined) {
