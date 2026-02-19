@@ -51,7 +51,7 @@ export function resolveFeatures(props: {
   const hasCollision = collision !== null
   const trail = props.trail ?? null
   const hasTrails = trail !== null
-  const hasTrailHistory = hasTrails && trail.mode === 'history'
+  const hasTrailHistory = hasTrails
 
   return {
     needsPerParticleColor,

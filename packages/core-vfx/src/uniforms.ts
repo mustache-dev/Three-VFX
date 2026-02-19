@@ -289,6 +289,7 @@ export function updateUniforms(
   u.collisionFriction.value = props.collision?.friction ?? 0.8
   u.collisionDie.value = props.collision?.die ? 1 : 0
   u.sizeBasedGravity.value = props.collision?.sizeBasedGravity ?? 0
+  u.trailLength.value = props.trail?.length ?? 0.5
 }
 
 export function updateUniformsPartial(

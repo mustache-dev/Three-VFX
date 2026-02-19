@@ -78,8 +78,6 @@ export type TrailConfig = {
   taper?: boolean
   /** Trail opacity (default: 1) */
   opacity?: number
-  /** Trail computation mode (default: 'procedural') */
-  mode?: 'procedural' | 'history'
   /** Trail length in seconds of history (default: 0.5) */
   length?: number
   /** Show particles alongside trails (default: true) */

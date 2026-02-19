@@ -4445,7 +4445,6 @@ const DebugPanelContent = ({ initialValues, onUpdate, mode = 'r3f' }) => {
                       width: 0.1,
                       taper: true,
                       opacity: 1,
-                      mode: 'procedural',
                       length: 0.5,
                       showParticles: true,
                     }
@@ -4454,12 +4453,6 @@ const DebugPanelContent = ({ initialValues, onUpdate, mode = 'r3f' }) => {
             }
             hidden={!matchesSearch('Trail')}
           >
-            <SelectInput
-              label="Mode"
-              value={values.trail?.mode || 'procedural'}
-              onChange={(v) => updateNested('trail', 'mode', v)}
-              options={{ Procedural: 'procedural', History: 'history' }}
-            />
             <NumberInput
               label="Segments"
               value={values.trail?.segments || 32}

@@ -16,7 +16,6 @@ export { createUpdateCompute } from './update'
 
 // Trail shader factories
 export {
-  createTrailProceduralPositionNode,
   createTrailHistoryCompute,
   createTrailHistoryPositionNode,
 } from './trail'

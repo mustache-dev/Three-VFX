@@ -22,7 +22,6 @@ import {
   createSpawnCompute,
   createUpdateCompute,
   createParticleMaterial,
-  createTrailProceduralPositionNode,
   createTrailHistoryCompute,
   createTrailHistoryPositionNode,
 } from './shaders'
@@ -247,6 +246,10 @@ export class VFXParticleSystem {
   async init(): Promise<void> {
     if (this.initialized) return
 
+    // Reset trail ring pointer on (re)init so history starts from a known state.
+    this.trailHeadValue = 0
+    ;(this.uniforms as unknown as UniformAccessor).trailHead.value = 0
+
     if (this.useCPUSimulation) {
       this.cpuArrays = extractCPUArrays(
         this.storage,
@@ -304,28 +307,18 @@ export class VFXParticleSystem {
         const segments = this.trailSegments
         const maxParticles = this.normalizedProps.maxParticles
 
-        // Create gpuPositionNode based on mode
-        let positionNode
-        if (trail.mode === 'history') {
-          // History mode: ring buffer
-          this.computeTrailHistory = createTrailHistoryCompute(
-            this.storage,
-            this.uniforms,
-            maxParticles,
-            segments
-          )
-          positionNode = createTrailHistoryPositionNode(
-            this.storage,
-            this.uniforms,
-            segments
-          )
-        } else {
-          // Procedural mode (default): reconstruct from velocity + gravity
-          positionNode = createTrailProceduralPositionNode(
-            this.storage,
-            this.uniforms
-          )
-        }
+        // Trails are history-based only.
+        this.computeTrailHistory = createTrailHistoryCompute(
+          this.storage,
+          this.uniforms,
+          maxParticles,
+          segments
+        )
+        const positionNode = createTrailHistoryPositionNode(
+          this.storage,
+          this.uniforms,
+          segments
+        )
 
         // Width function: taper trail from head to tail
         const taper = trail.taper !== false
@@ -632,6 +625,10 @@ export class VFXParticleSystem {
   }
 
   clear(): void {
+    // Reset trail ring pointer when clearing particles.
+    this.trailHeadValue = 0
+    ;(this.uniforms as unknown as UniformAccessor).trailHead.value = 0
+
     if (this.useCPUSimulation) {
       this.cpuArrays = extractCPUArrays(
         this.storage,
@@ -712,5 +709,6 @@ export class VFXParticleSystem {
     if (this.storage.particleColorStarts)
       setUsage(this.storage.particleColorStarts)
     if (this.storage.particleColorEnds) setUsage(this.storage.particleColorEnds)
+    if (this.storage.trailHistory) setUsage(this.storage.trailHistory)
   }
 }

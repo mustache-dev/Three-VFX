@@ -68,7 +68,6 @@ export {
   createUpdateCompute,
   createParticleMaterial,
   selectColor,
-  createTrailProceduralPositionNode,
   createTrailHistoryCompute,
   createTrailHistoryPositionNode,
 } from './shaders'

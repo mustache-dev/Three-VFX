@@ -53,7 +53,32 @@ export default function App() {
             <Player />
           </KeyboardControls>
           {/* <Boom />*/}
-          <VFXParticles debug />
+          <VFXParticles
+            delay={0.48}
+            gravity={[0, -10.7, 0]}
+            speed={[4.67, 4.67]}
+            appearance="gradient"
+            lighting="standard"
+            emitterShape={1}
+            collision={{
+              plane: {
+                y: -0.89,
+              },
+              bounce: 0.57,
+              friction: 0.14,
+              die: false,
+              sizeBasedGravity: 0,
+            }}
+            debug
+            trail={{
+              segments: 32,
+              width: 0.1,
+              taper: false,
+              opacity: 1,
+              length: 0.5,
+              showParticles: true,
+            }}
+          />
 
           {/* <group position={[5, 0, 0]}>
             <VFXParticles debug fallback={<FallbackSprite />} />
