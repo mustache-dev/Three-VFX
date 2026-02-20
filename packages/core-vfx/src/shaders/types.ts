@@ -50,6 +50,7 @@ export type MaterialOptions = {
   orientToDirection: boolean
   shadow: boolean
   blending: THREE.Blending
+  side: THREE.Side
   // Custom nodes
   geometryNode:
     | Node

@@ -4,6 +4,7 @@ export { type CoreState, type ParticleSystemRef, coreStore } from './core-store'
 export {
   Appearance,
   Blending,
+  Side,
   EmitterShape,
   AttractorType,
   Easing,

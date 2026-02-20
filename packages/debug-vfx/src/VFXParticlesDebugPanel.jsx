@@ -1,6 +1,6 @@
 import { createRoot } from 'react-dom/client'
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { Appearance, Blending, EmitterShape, Lighting } from 'core-vfx'
+import { Appearance, Blending, Side, EmitterShape, Lighting } from 'core-vfx'
 import { buildCurveTextureBin } from 'core-vfx'
 import { create } from 'zustand'
 import { GeometryType, geometryDefaults } from './geometry'
@@ -75,6 +75,7 @@ export const DEFAULT_VALUES = Object.freeze({
   lighting: Lighting.STANDARD,
   shadow: false,
   blending: Blending.NORMAL,
+  side: Side.DOUBLE,
   intensity: 1,
   position: [0, 0, 0],
   autoStart: true,
@@ -3218,6 +3219,7 @@ const DebugPanelContent = ({ initialValues, onUpdate, mode = 'r3f' }) => {
       'rendering',
       'appearance',
       'blending',
+      'side',
       'lighting',
       'shadow',
       'material',
@@ -4264,6 +4266,16 @@ const DebugPanelContent = ({ initialValues, onUpdate, mode = 'r3f' }) => {
                 Additive: Blending.ADDITIVE,
                 Multiply: Blending.MULTIPLY,
                 Subtractive: Blending.SUBTRACTIVE,
+              }}
+            />
+            <SelectInput
+              label="Side"
+              value={values.side ?? Side.DOUBLE}
+              onChange={(v) => update('side', parseInt(v))}
+              options={{
+                Front: Side.FRONT,
+                Back: Side.BACK,
+                Double: Side.DOUBLE,
               }}
             />
             <SelectInput

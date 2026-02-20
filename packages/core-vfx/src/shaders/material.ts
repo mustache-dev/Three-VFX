@@ -54,6 +54,7 @@ export const createParticleMaterial = (
     geometry,
     orientToDirection,
     blending,
+    side,
     geometryNode,
     opacityNode,
     colorNode,
@@ -386,7 +387,7 @@ export const createParticleMaterial = (
     mat.transparent = true
     mat.depthWrite = false
     mat.blending = blending
-    mat.side = THREE.DoubleSide
+    mat.side = side
 
     // Apply custom backdrop node if provided
     if (backdropNode) {

@@ -188,6 +188,7 @@ const propOrder = [
   'stretchBySpeed',
   'appearance',
   'blending',
+  'side',
   'lighting',
   'shadow',
   'emitterShape',
@@ -273,6 +274,7 @@ const shouldSkipDefault = (
   // Appearance/blending/lighting defaults
   if (key === 'appearance' && value === 0) return true // GRADIENT
   if (key === 'blending' && value === 1) return true // NORMAL
+  if (key === 'side' && value === 2) return true // DOUBLE
   if (key === 'lighting' && value === 1) return true // STANDARD
 
   if (key === 'shadow' && value === false) return true

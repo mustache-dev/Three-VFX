@@ -15,6 +15,13 @@ export const Blending = Object.freeze({
   SUBTRACTIVE: THREE.SubtractiveBlending,
 })
 
+// Side modes
+export const Side = Object.freeze({
+  FRONT: THREE.FrontSide,
+  BACK: THREE.BackSide,
+  DOUBLE: THREE.DoubleSide,
+})
+
 // Emitter shape types
 export const EmitterShape = Object.freeze({
   POINT: 0, // Single point emission

@@ -280,6 +280,7 @@ export class VFXParticleSystem {
         orientToDirection: np.orientToDirection,
         shadow: np.shadow,
         blending: np.blending,
+        side: np.side,
         geometryNode: options.geometryNode ?? null,
         opacityNode: options.opacityNode ?? null,
         colorNode: options.colorNode ?? null,

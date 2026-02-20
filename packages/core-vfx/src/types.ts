@@ -186,6 +186,7 @@ export type NormalizedParticleProps = {
   lightingParams: ResolvedLightingParams
   shadow: boolean
   blending: THREE.Blending
+  side: THREE.Side
   depthTest: boolean
   renderOrder: number
   colorStart: string[]
@@ -313,6 +314,8 @@ export type BaseParticleProps = {
   shadow?: boolean
   /** Blending mode */
   blending?: THREE.Blending
+  /** Side rendering mode (front, back, double) */
+  side?: THREE.Side
   /** Color intensity multiplier */
   intensity?: number
   /** Emitter position [x, y, z] */

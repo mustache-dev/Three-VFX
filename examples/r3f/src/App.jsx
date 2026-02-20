@@ -7,11 +7,16 @@ import { WebGPUPostProcessing } from './WebGPUPostprocessing'
 import { Floor } from './Floor'
 import Player from './Player'
 import { Boom } from './Boom'
-import { VFXParticles } from 'r3f-vfx'
+import { Side, VFXParticles } from 'r3f-vfx'
 import {
+  abs,
+  cos,
   fract,
   mix,
   mul,
+  normalGeometry,
+  positionLocal,
+  rotate,
   sin,
   texture,
   time,
@@ -20,7 +25,7 @@ import {
   vec3,
   vec4,
 } from 'three/tsl'
-import { OrbitControls } from '@react-three/drei/webgpu'
+import { OrbitControls, useTexture } from '@react-three/drei/webgpu'
 
 function FallbackSprite() {
   const texture = useLoader(THREE.TextureLoader, './fallback.png')
@@ -41,13 +46,8 @@ const keyboardMap = [
 ]
 
 export default function App() {
-  const tex = useLoader(THREE.TextureLoader, './trail.png')
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping
-  const crystalGeometry = useMemo(() => new THREE.IcosahedronGeometry(1, 2), [])
-  const ribbonGeometry = useMemo(
-    () => new THREE.BoxGeometry(0.3, 0.3, 1.8, 2, 2, 12),
-    []
-  )
+  const noiseTex = useLoader(THREE.TextureLoader, './marble.png')
+  noiseTex.wrapS = noiseTex.wrapT = THREE.RepeatWrapping
   return (
     <>
       <Canvas shadows renderer={{ forceWebGL: false }}>
@@ -59,9 +59,33 @@ export default function App() {
             <Player />
           </KeyboardControls>*/}
           <OrbitControls />
-          <Boom />
+          {/* <Boom />*/}
+          <VFXParticles
+            geometry={new THREE.BoxGeometry(0.5, 0.5, 0.5)}
+            delay={1}
+            fadeOpacity={[1, 1]}
+            maxParticles={20}
+            side={Side.FRONT}
+            gravity={[0, 1, 0]}
+            speed={[1.2, 1.5]}
+            fadeSize={[1, 1]}
+            size={[2, 2]}
+            direction={[
+              [-1, -0.2],
+              [-0, 0],
+              [-0.2, 0.2],
+            ]}
+            appearance="gradient"
+            lighting="standard"
+            emitterShape={1}
+            geometryNode={({ progress, position }, defaultPosition) => {
+              const local = defaultPosition.sub(position)
+              const rotated = rotate(local, vec3(0, 0, sin(time.mul(3))))
+              return rotated.add(position)
+            }}
+          />
           <group position={[-4, -0.2, 0]}>
-            <VFXParticles
+            {/* <VFXParticles
               maxParticles={1200}
               autoStart
               emitCount={3}
@@ -84,11 +108,11 @@ export default function App() {
                   vec3(0, sin(time.mul(6).add(progress.mul(8))).mul(0.12), 0)
                 )
               }
-            />
+            />*/}
           </group>
 
           <group position={[4, -0.2, 0]}>
-            <VFXParticles
+            {/* <VFXParticles
               maxParticles={1200}
               autoStart
               emitCount={3}
@@ -119,7 +143,7 @@ export default function App() {
                   defaultPosition.z
                 )
               }}
-            />
+            />*/}
           </group>
           {/* <VFXParticles
             delay={0.48}

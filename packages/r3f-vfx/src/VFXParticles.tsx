@@ -13,6 +13,7 @@ import { useVFXStore } from './react-store'
 import {
   Appearance,
   Blending,
+  Side,
   EmitterShape,
   Lighting,
   VFXParticleSystem,
@@ -28,6 +29,7 @@ import {
 export {
   Appearance,
   Blending,
+  Side,
   EmitterShape,
   AttractorType,
   Easing,
@@ -88,6 +90,7 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
       lightingParams = null,
       shadow = false,
       blending = Blending.NORMAL,
+      side = Side.DOUBLE,
       intensity = 1,
       position = [0, 0, 0],
       autoStart = true,
@@ -252,6 +255,7 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
             lightingParams,
             shadow: activeShadow,
             blending: dbg?.blending ?? blending,
+            side: dbg?.side ?? side,
             intensity: dbg?.intensity ?? intensity,
             position: dbg?.position ?? position,
             autoStart: dbg?.autoStart ?? autoStart,
@@ -312,6 +316,7 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
         alphaMap,
         flipbook,
         blending,
+        side,
         lightingParamsKey,
         backdropNode,
         geometryNode,
@@ -633,6 +638,12 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
           system.material.needsUpdate = true
         }
 
+        // Update material side directly
+        if (system.material && newValues.side !== undefined) {
+          system.material.side = newValues.side
+          system.material.needsUpdate = true
+        }
+
         // Remount-required values
         if (
           newValues.maxParticles !== undefined &&
@@ -754,6 +765,7 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
             lighting,
             shadow,
             blending,
+            side,
             intensity,
             position,
             autoStart,

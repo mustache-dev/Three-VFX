@@ -154,7 +154,7 @@ import type {
   NormalizedParticleProps,
   ResolvedLightingParams,
 } from './types'
-import { Appearance, Blending, EmitterShape, Lighting } from './constants'
+import { Appearance, Blending, EmitterShape, Lighting, Side } from './constants'
 
 export const normalizeProps = (
   props: BaseParticleProps
@@ -224,6 +224,7 @@ export const normalizeProps = (
   }
   const shadow = props.shadow ?? false
   const blending = props.blending ?? Blending.NORMAL
+  const side = props.side ?? Side.DOUBLE
 
   // Normalize ranges
   const sizeRange = toRange(size, [0.1, 0.3])
@@ -311,6 +312,7 @@ export const normalizeProps = (
     lightingParams,
     shadow,
     blending,
+    side,
     trail: props.trail ?? null,
     depthTest: true,
     renderOrder: 0,
