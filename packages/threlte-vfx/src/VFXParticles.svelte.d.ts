@@ -40,6 +40,7 @@ export interface VFXParticlesProps {
   orientAxis?: string
   stretchBySpeed?: StretchConfig | null
   lighting?: string | number
+  lightingParams?: VFXParticleSystemOptions['lightingParams']
   shadow?: boolean
   blending?: string | number
   intensity?: number
@@ -47,6 +48,7 @@ export interface VFXParticlesProps {
   autoStart?: boolean
   delay?: number
   backdropNode?: unknown
+  geometryNode?: unknown
   opacityNode?: unknown
   colorNode?: unknown
   alphaTestNode?: unknown
@@ -65,6 +67,8 @@ export interface VFXParticlesProps {
   softParticles?: boolean
   softDistance?: number
   collision?: CollisionConfig | null
+  sortParticles?: boolean
+  sortFrameInterval?: number | null
   curveTexturePath?: string | null
   depthTest?: boolean
   renderOrder?: number

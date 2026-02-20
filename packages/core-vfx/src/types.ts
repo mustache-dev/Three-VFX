@@ -105,6 +105,37 @@ export type StretchConfig = {
   maxStretch: number
 } | null
 
+// Geometry material parameters for STANDARD/PHYSICAL lighting
+export type LightingParams = {
+  roughness?: number
+  metalness?: number
+  emissive?: string
+  emissiveIntensity?: number
+  envMapIntensity?: number
+  clearcoat?: number
+  clearcoatRoughness?: number
+  transmission?: number
+  thickness?: number
+  ior?: number
+  iridescence?: number
+  iridescenceIOR?: number
+} | null
+
+export type ResolvedLightingParams = {
+  roughness: number
+  metalness: number
+  emissive: string
+  emissiveIntensity: number
+  envMapIntensity: number
+  clearcoat: number
+  clearcoatRoughness: number
+  transmission: number
+  thickness: number
+  ior: number
+  iridescence: number
+  iridescenceIOR: number
+}
+
 // Normalized particle props - all shorthand/optional values resolved to canonical form
 export type NormalizedParticleProps = {
   maxParticles: number
@@ -152,6 +183,7 @@ export type NormalizedParticleProps = {
   orientAxis: string
   stretchBySpeed: StretchConfig
   lighting: string
+  lightingParams: ResolvedLightingParams
   shadow: boolean
   blending: THREE.Blending
   depthTest: boolean
@@ -177,6 +209,12 @@ export type VFXParticleSystemOptions = BaseParticleProps & {
   /** TSL node or function for backdrop sampling */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   backdropNode?: any | ((data: ParticleData) => any) | null
+  /** TSL node or function to deform geometry-mode vertex positions */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  geometryNode?:
+    | any
+    | ((data: ParticleData, defaultPosition: any) => any)
+    | null
   /** TSL node or function for custom opacity */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   opacityNode?: any | ((data: ParticleData) => any) | null
@@ -269,6 +307,8 @@ export type BaseParticleProps = {
   stretchBySpeed?: StretchConfig
   /** Material lighting type for geometry mode */
   lighting?: (typeof Lighting)[keyof typeof Lighting]
+  /** Material parameters for STANDARD/PHYSICAL lighting */
+  lightingParams?: LightingParams
   /** Enable shadows on geometry instances */
   shadow?: boolean
   /** Blending mode */

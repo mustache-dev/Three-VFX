@@ -149,7 +149,11 @@ export const isNonDefaultRotation = (
 }
 
 // Normalize BaseParticleProps into fully-resolved NormalizedParticleProps
-import type { BaseParticleProps, NormalizedParticleProps } from './types'
+import type {
+  BaseParticleProps,
+  NormalizedParticleProps,
+  ResolvedLightingParams,
+} from './types'
 import { Appearance, Blending, EmitterShape, Lighting } from './constants'
 
 export const normalizeProps = (
@@ -203,6 +207,21 @@ export const normalizeProps = (
   const orientAxis = props.orientAxis ?? 'z'
   const stretchBySpeed = props.stretchBySpeed ?? null
   const lighting = props.lighting ?? Lighting.STANDARD
+  const rawLightingParams = props.lightingParams ?? {}
+  const lightingParams: ResolvedLightingParams = {
+    roughness: rawLightingParams?.roughness ?? 1,
+    metalness: rawLightingParams?.metalness ?? 0,
+    emissive: rawLightingParams?.emissive ?? '#000000',
+    emissiveIntensity: rawLightingParams?.emissiveIntensity ?? 1,
+    envMapIntensity: rawLightingParams?.envMapIntensity ?? 1,
+    clearcoat: rawLightingParams?.clearcoat ?? 0,
+    clearcoatRoughness: rawLightingParams?.clearcoatRoughness ?? 0,
+    transmission: rawLightingParams?.transmission ?? 0,
+    thickness: rawLightingParams?.thickness ?? 0,
+    ior: rawLightingParams?.ior ?? 1.5,
+    iridescence: rawLightingParams?.iridescence ?? 0,
+    iridescenceIOR: rawLightingParams?.iridescenceIOR ?? 1.3,
+  }
   const shadow = props.shadow ?? false
   const blending = props.blending ?? Blending.NORMAL
 
@@ -289,6 +308,7 @@ export const normalizeProps = (
     orientAxis,
     stretchBySpeed,
     lighting,
+    lightingParams,
     shadow,
     blending,
     trail: props.trail ?? null,

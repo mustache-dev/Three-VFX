@@ -337,6 +337,35 @@ async function main() {
   await debugParticles.init()
 
   // =========================================================================
+  // Geometry-node particles (vertex deformation on geometry mode)
+  // =========================================================================
+  const geometryParticles = new VFXParticles(renderer, {
+    autoStart: true,
+    maxParticles: 800,
+    emitCount: 4,
+    delay: 0.02,
+    position: [-5, -0.6, 0],
+    geometry: new THREE.IcosahedronGeometry(0.22, 1),
+    lighting: 'standard',
+    size: [0.25, 0.5],
+    speed: [0.2, 0.5],
+    lifetime: [0.8, 1.4],
+    colorStart: ['#66ccff', '#aaffff'],
+    colorEnd: ['#2244aa'],
+    rotation: [
+      [0, Math.PI * 2],
+      [0, Math.PI * 2],
+      [0, Math.PI * 2],
+    ],
+    geometryNode: (
+      { progress }: { progress: ReturnType<typeof float> },
+      defaultPosition: ReturnType<typeof vec3>
+    ) => defaultPosition.add(vec3(0, progress.mul(0.35), 0)),
+  })
+  scene.add(geometryParticles.object3D)
+  await geometryParticles.init()
+
+  // =========================================================================
   // Post-processing
   // =========================================================================
   const scenePass = pass(scene, camera, {
@@ -474,6 +503,7 @@ async function main() {
     // -- Particles --
     particles.update(delta)
     debugParticles.update(delta)
+    geometryParticles.update(delta)
 
     // -- Render --
     postProcessing.render()

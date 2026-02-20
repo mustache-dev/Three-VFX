@@ -24,6 +24,8 @@ export type {
   FrictionConfig,
   FlipbookConfig,
   StretchConfig,
+  LightingParams,
+  ResolvedLightingParams,
   TrailConfig,
   TrailData,
   BaseParticleProps,

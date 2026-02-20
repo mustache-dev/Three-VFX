@@ -85,6 +85,7 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
       orientAxis = 'z',
       stretchBySpeed = null,
       lighting = Lighting.STANDARD,
+      lightingParams = null,
       shadow = false,
       blending = Blending.NORMAL,
       intensity = 1,
@@ -92,6 +93,7 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
       autoStart = true,
       delay = 0,
       backdropNode = null,
+      geometryNode = null,
       opacityNode = null,
       colorNode = null,
       alphaTestNode = null,
@@ -158,6 +160,10 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
       useState(colorStart.length > 1 || colorEnd !== null)
     const [activeNeedsRotation, setActiveNeedsRotation] = useState(
       isNonDefaultRotation(rotation) || isNonDefaultRotation(rotationSpeed)
+    )
+    const lightingParamsKey = useMemo(
+      () => JSON.stringify(lightingParams ?? null),
+      [lightingParams]
     )
 
     // Keep remount-required state in sync with props (when not in debug mode)
@@ -243,6 +249,7 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
             orientAxis: dbg?.orientAxis ?? orientAxis,
             stretchBySpeed: dbg?.stretchBySpeed ?? stretchBySpeed,
             lighting: activeLighting,
+            lightingParams,
             shadow: activeShadow,
             blending: dbg?.blending ?? blending,
             intensity: dbg?.intensity ?? intensity,
@@ -271,6 +278,7 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
                 ? dbg.sortFrameInterval
                 : sortFrameInterval,
             backdropNode,
+            geometryNode,
             opacityNode,
             colorNode,
             alphaTestNode,
@@ -304,7 +312,9 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
         alphaMap,
         flipbook,
         blending,
+        lightingParamsKey,
         backdropNode,
+        geometryNode,
         opacityNode,
         colorNode,
         alphaTestNode,

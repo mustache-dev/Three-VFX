@@ -1,5 +1,6 @@
 import type * as THREE from 'three/webgpu'
 import type { Node, StorageBufferNode } from 'three/webgpu'
+import type { ResolvedLightingParams } from '../types'
 
 // Storage arrays for particle data (uses StorageBufferNode for proper .toAttribute() typing)
 // Optional arrays are null when feature is unused (saves GPU memory):
@@ -43,12 +44,17 @@ export type MaterialOptions = {
   flipbook: { rows: number; columns: number } | null
   appearance: string
   lighting: string
+  lightingParams: ResolvedLightingParams
   softParticles: boolean
   geometry: THREE.BufferGeometry | null
   orientToDirection: boolean
   shadow: boolean
   blending: THREE.Blending
   // Custom nodes
+  geometryNode:
+    | Node
+    | ((data: Record<string, Node>, defaultPosition: Node) => Node)
+    | null
   opacityNode: Node | ((data: Record<string, Node>) => Node) | null
   colorNode:
     | Node

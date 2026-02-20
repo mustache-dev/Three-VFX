@@ -49,10 +49,12 @@ export const createParticleMaterial = (
     flipbook,
     appearance,
     lighting,
+    lightingParams,
     softParticles,
     geometry,
     orientToDirection,
     blending,
+    geometryNode,
     opacityNode,
     colorNode,
     backdropNode,
@@ -210,6 +212,28 @@ export const createParticleMaterial = (
         break
     }
 
+    if (lighting !== Lighting.BASIC) {
+      const litMat = mat as
+        | THREE.MeshStandardNodeMaterial
+        | THREE.MeshPhysicalNodeMaterial
+      litMat.roughness = lightingParams.roughness
+      litMat.metalness = lightingParams.metalness
+      litMat.emissive.set(lightingParams.emissive)
+      litMat.emissiveIntensity = lightingParams.emissiveIntensity
+      litMat.envMapIntensity = lightingParams.envMapIntensity
+
+      if (lighting === Lighting.PHYSICAL) {
+        const physicalMat = mat as THREE.MeshPhysicalNodeMaterial
+        physicalMat.clearcoat = lightingParams.clearcoat
+        physicalMat.clearcoatRoughness = lightingParams.clearcoatRoughness
+        physicalMat.transmission = lightingParams.transmission
+        physicalMat.thickness = lightingParams.thickness
+        physicalMat.ior = lightingParams.ior
+        physicalMat.iridescence = lightingParams.iridescence
+        physicalMat.iridescenceIOR = lightingParams.iridescenceIOR
+      }
+    }
+
     // Calculate effective velocity for stretch
     const velocityCurveValue = curveSample.z
     const effectiveVelocityMultiplier = uniforms.velocityCurveEnabled
@@ -344,7 +368,12 @@ export const createParticleMaterial = (
     // Apply base scale
     const scaledPos = rotatedPos.mul(baseScale)
 
-    mat.positionNode = scaledPos.add(particlePos)
+    const defaultPosition = scaledPos.add(particlePos)
+    mat.positionNode = geometryNode
+      ? typeof geometryNode === 'function'
+        ? geometryNode(particleData, defaultPosition)
+        : geometryNode
+      : defaultPosition
 
     // Apply custom colorNode if provided, otherwise use default
     const defaultColor = vec4(intensifiedColor, finalOpacity)

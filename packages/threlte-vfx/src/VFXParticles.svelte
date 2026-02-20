@@ -54,6 +54,7 @@ let {
   orientAxis = 'z',
   stretchBySpeed = null,
   lighting = Lighting.STANDARD,
+  lightingParams = null,
   shadow = false,
   blending = Blending.NORMAL,
   intensity = 1,
@@ -61,6 +62,7 @@ let {
   autoStart = true,
   delay = 0,
   backdropNode = null,
+  geometryNode = null,
   opacityNode = null,
   colorNode = null,
   alphaTestNode = null,
@@ -113,6 +115,7 @@ let {
   orientAxis?: string
   stretchBySpeed?: StretchConfig | null
   lighting?: string | number
+  lightingParams?: VFXParticleSystemOptions['lightingParams']
   shadow?: boolean
   blending?: string | number
   intensity?: number
@@ -120,6 +123,7 @@ let {
   autoStart?: boolean
   delay?: number
   backdropNode?: unknown
+  geometryNode?: unknown
   opacityNode?: unknown
   colorNode?: unknown
   alphaTestNode?: unknown
@@ -178,6 +182,7 @@ let activeAttractors = $state(
   attractors !== null && (attractors?.length ?? 0) > 0
 )
 let activeCollision = $state(collision !== null)
+let activeLightingParamsKey = $state(JSON.stringify(lightingParams ?? null))
 let activeNeedsPerParticleColor = $state(
   colorStart.length > 1 || colorEnd !== null
 )
@@ -221,6 +226,7 @@ function buildOptions(): VFXParticleSystemOptions {
     orientAxis: (dbg?.orientAxis ?? orientAxis) as string,
     stretchBySpeed: (dbg?.stretchBySpeed ?? stretchBySpeed) as StretchConfig | null,
     lighting: untrack(() => activeLighting) as VFXParticleSystemOptions['lighting'],
+    lightingParams: lightingParams as VFXParticleSystemOptions['lightingParams'],
     shadow: untrack(() => activeShadow) as boolean,
     blending: (dbg?.blending ?? blending) as VFXParticleSystemOptions['blending'],
     intensity: (dbg?.intensity ?? intensity) as number,
@@ -247,6 +253,7 @@ function buildOptions(): VFXParticleSystemOptions {
         ? (dbg.sortFrameInterval as number | null)
         : (sortFrameInterval as number | null),
     backdropNode: backdropNode as VFXParticleSystemOptions['backdropNode'],
+    geometryNode: geometryNode as VFXParticleSystemOptions['geometryNode'],
     opacityNode: opacityNode as VFXParticleSystemOptions['opacityNode'],
     colorNode: colorNode as VFXParticleSystemOptions['colorNode'],
     alphaTestNode: alphaTestNode as VFXParticleSystemOptions['alphaTestNode'],
@@ -570,6 +577,7 @@ $effect(() => {
     turbulence,
     attractors,
     collision,
+    lightingParams,
   ]
 
   if (debug) return
@@ -596,6 +604,7 @@ $effect(() => {
     activeAttractors =
       attractors !== null && (attractors?.length ?? 0) > 0
     activeCollision = collision !== null
+    activeLightingParamsKey = JSON.stringify(lightingParams ?? null)
   })
 })
 
@@ -618,6 +627,7 @@ $effect(() => {
     activeFadeOpacityCurve,
     activeVelocityCurve,
     activeRotationSpeedCurve,
+    activeLightingParamsKey,
   ]
 
   if (!mounted) return

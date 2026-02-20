@@ -251,16 +251,18 @@ interface CurveData {
 
 #### Custom Shader Props
 
-| Prop             | Type           | Description                    |
-| ---------------- | -------------- | ------------------------------ |
-| `colorNode`      | `NodeFunction` | Custom color shader            |
-| `opacityNode`    | `NodeFunction` | Custom opacity shader          |
-| `backdropNode`   | `NodeFunction` | Backdrop sampling (refraction) |
-| `castShadowNode` | `NodeFunction` | Shadow map output              |
-| `alphaTestNode`  | `NodeFunction` | Alpha test/discard             |
+| Prop             | Type                   | Description                            |
+| ---------------- | ---------------------- | -------------------------------------- |
+| `geometryNode`   | `GeometryNodeFunction` | Geometry-mode vertex position override |
+| `colorNode`      | `NodeFunction`         | Custom color shader                    |
+| `opacityNode`    | `NodeFunction`         | Custom opacity shader                  |
+| `backdropNode`   | `NodeFunction`         | Backdrop sampling (refraction)         |
+| `castShadowNode` | `NodeFunction`         | Shadow map output                      |
+| `alphaTestNode`  | `NodeFunction`         | Alpha test/discard                     |
 
 ```ts
 type NodeFunction = (data: ParticleData, defaultColor?: Node) => Node
+type GeometryNodeFunction = (data: ParticleData, defaultPosition: Node) => Node
 
 interface ParticleData {
   progress: Node // 0 → 1 over lifetime

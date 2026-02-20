@@ -139,6 +139,10 @@ export const VFXParticles = defineComponent({
       type: null as unknown as PropType<string | number>,
       default: Lighting.STANDARD,
     },
+    lightingParams: {
+      type: Object as PropType<VFXParticleSystemOptions['lightingParams']>,
+      default: null,
+    },
     shadow: { type: Boolean, default: false },
     blending: {
       type: null as unknown as PropType<string | number>,
@@ -152,6 +156,7 @@ export const VFXParticles = defineComponent({
     autoStart: { type: Boolean, default: true },
     delay: { type: Number, default: 0 },
     backdropNode: { type: null as unknown as PropType<unknown>, default: null },
+    geometryNode: { type: null as unknown as PropType<unknown>, default: null },
     opacityNode: { type: null as unknown as PropType<unknown>, default: null },
     colorNode: { type: null as unknown as PropType<unknown>, default: null },
     alphaTestNode: {
@@ -237,6 +242,7 @@ export const VFXParticles = defineComponent({
       props.attractors !== null && (props.attractors?.length ?? 0) > 0
     )
     const activeCollision = ref(props.collision !== null)
+    const activeLightingParamsKey = ref(JSON.stringify(props.lightingParams ?? null))
     const activeNeedsPerParticleColor = ref(
       props.colorStart.length > 1 || props.colorEnd !== null
     )
@@ -293,6 +299,8 @@ export const VFXParticles = defineComponent({
         stretchBySpeed: (dbg?.stretchBySpeed ??
           props.stretchBySpeed) as StretchConfig | null,
         lighting: activeLighting.value as VFXParticleSystemOptions['lighting'],
+        lightingParams:
+          props.lightingParams as VFXParticleSystemOptions['lightingParams'],
         shadow: activeShadow.value as boolean,
         blending: (dbg?.blending ??
           props.blending) as VFXParticleSystemOptions['blending'],
@@ -339,6 +347,8 @@ export const VFXParticles = defineComponent({
             : (props.sortFrameInterval as number | null),
         backdropNode:
           props.backdropNode as VFXParticleSystemOptions['backdropNode'],
+        geometryNode:
+          props.geometryNode as VFXParticleSystemOptions['geometryNode'],
         opacityNode:
           props.opacityNode as VFXParticleSystemOptions['opacityNode'],
         colorNode: props.colorNode as VFXParticleSystemOptions['colorNode'],
@@ -688,6 +698,7 @@ export const VFXParticles = defineComponent({
         props.turbulence,
         props.attractors,
         props.collision,
+        props.lightingParams,
       ],
       () => {
         if (props.debug) return
@@ -712,6 +723,7 @@ export const VFXParticles = defineComponent({
         activeAttractors.value =
           props.attractors !== null && (props.attractors?.length ?? 0) > 0
         activeCollision.value = props.collision !== null
+        activeLightingParamsKey.value = JSON.stringify(props.lightingParams ?? null)
       }
     )
 
@@ -733,6 +745,7 @@ export const VFXParticles = defineComponent({
         activeFadeOpacityCurve,
         activeVelocityCurve,
         activeRotationSpeedCurve,
+        activeLightingParamsKey,
       ],
       () => {
         initSystem()

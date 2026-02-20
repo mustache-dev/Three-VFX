@@ -1,7 +1,7 @@
 import * as THREE from 'three/webgpu'
 import { Canvas, useLoader } from '@react-three/fiber'
 import SceneLight from './SceneLight'
-import { Suspense } from 'react'
+import { Suspense, useMemo } from 'react'
 import { KeyboardControls, Loader } from '@react-three/drei'
 import { WebGPUPostProcessing } from './WebGPUPostprocessing'
 import { Floor } from './Floor'
@@ -43,6 +43,11 @@ const keyboardMap = [
 export default function App() {
   const tex = useLoader(THREE.TextureLoader, './trail.png')
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping
+  const crystalGeometry = useMemo(() => new THREE.IcosahedronGeometry(1, 2), [])
+  const ribbonGeometry = useMemo(
+    () => new THREE.BoxGeometry(0.3, 0.3, 1.8, 2, 2, 12),
+    []
+  )
   return (
     <>
       <Canvas shadows renderer={{ forceWebGL: false }}>
@@ -55,6 +60,67 @@ export default function App() {
           </KeyboardControls>*/}
           <OrbitControls />
           <Boom />
+          <group position={[-4, -0.2, 0]}>
+            <VFXParticles
+              maxParticles={1200}
+              autoStart
+              emitCount={3}
+              delay={0.02}
+              geometry={crystalGeometry}
+              lighting="standard"
+              size={[0.14, 0.3]}
+              speed={[10, 0.9]}
+              lifetime={[1, 1.8]}
+              gravity={[0, 0.8, 0]}
+              colorStart={['#66ccff', '#bffcff']}
+              colorEnd={['#2244aa']}
+              rotation={[
+                [0, Math.PI * 2],
+                [0, Math.PI * 2],
+                [0, Math.PI * 2],
+              ]}
+              geometryNode={({ progress }, defaultPosition) =>
+                defaultPosition.add(
+                  vec3(0, sin(time.mul(6).add(progress.mul(8))).mul(0.12), 0)
+                )
+              }
+            />
+          </group>
+
+          <group position={[4, -0.2, 0]}>
+            <VFXParticles
+              maxParticles={1200}
+              autoStart
+              emitCount={3}
+              delay={0.02}
+              geometry={ribbonGeometry}
+              lighting="physical"
+              lightingParams={{
+                roughness: 0.3,
+                metalness: 0.8,
+                clearcoat: 1,
+                clearcoatRoughness: 0.1,
+                iridescence: 1,
+                iridescenceIOR: 1.5,
+              }}
+              size={[0.12, 0.24]}
+              speed={[0.3, 0.9]}
+              lifetime={[1, 1.8]}
+              gravity={[0, 0.8, 0]}
+              colorStart={['#ffb36b', '#ffe5b2']}
+              colorEnd={['#d34f1f']}
+              geometryNode={({ progress }, defaultPosition) => {
+                const bend = sin(
+                  defaultPosition.z.mul(5).add(time.mul(4)).add(progress.mul(6))
+                ).mul(0.18)
+                return vec3(
+                  defaultPosition.x.add(bend),
+                  defaultPosition.y,
+                  defaultPosition.z
+                )
+              }}
+            />
+          </group>
           {/* <VFXParticles
             delay={0.48}
             gravity={[0, -10.7, 0]}

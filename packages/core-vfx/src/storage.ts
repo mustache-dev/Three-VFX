@@ -11,6 +11,8 @@ export const STRUCTURAL_KEYS = [
   'appearance',
   'shadow',
   'orientToDirection',
+  'lightingParams',
+  'geometryNode',
 ] as const
 
 export function resolveFeatures(props: {
