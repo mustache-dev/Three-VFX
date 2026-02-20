@@ -108,8 +108,13 @@ export class VFXParticleSystem {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private sortSubBlockSizeUniform: any = null
   private sortPasses: Array<{ blockSize: number; subBlockSize: number }> = []
+  private gpuSortFrameInterval = 1
+  private gpuSortFrameCounter = 0
+  private gpuSortUrgentFrames = 0
   // True when using CPU simulation (WebGL backend only)
   private useCPUSimulation: boolean = false
+  private pendingUpdateDelta = 0
+  private updateInFlight: Promise<void> | null = null
 
   constructor(
     renderer: THREE.WebGPURenderer,
@@ -207,6 +212,10 @@ export class VFXParticleSystem {
           np.maxParticles
         )
         this.sortPasses = this.buildSortPasses(np.maxParticles)
+        this.gpuSortFrameInterval = this.resolveGpuSortInterval(np.maxParticles)
+        if (options.sortFrameInterval !== undefined) {
+          this.setSortFrameInterval(options.sortFrameInterval)
+        }
       }
     }
 
@@ -301,11 +310,8 @@ export class VFXParticleSystem {
     ;(this.uniforms as unknown as UniformAccessor).trailHead.value = 0
 
     if (this.useCPUSimulation) {
-      this.cpuArrays = extractCPUArrays(
-        this.storage,
-        this.normalizedProps.maxParticles
-      )
-      cpuInit(this.cpuArrays, this.normalizedProps.maxParticles)
+      const cpu = this.ensureCPUArrays()
+      cpuInit(cpu, this.normalizedProps.maxParticles)
       markAllDirty(this.storage)
     } else {
       const renderer = this.renderer as unknown as {
@@ -316,6 +322,8 @@ export class VFXParticleSystem {
         await renderer.computeAsync(this.computeSortInit)
       }
     }
+    this.gpuSortFrameCounter = 0
+    this.gpuSortUrgentFrames = 0
 
     // If curveTexturePath is set, load async and update texture in-place
     if (this.options.curveTexturePath) {
@@ -564,12 +572,8 @@ export class VFXParticleSystem {
     this.nextIndex = endIdx
 
     if (this.useCPUSimulation) {
-      // Re-extract CPU arrays in case WebGPU repacked vec3→vec4 stride
-      this.cpuArrays = extractCPUArrays(
-        this.storage,
-        this.normalizedProps.maxParticles
-      )
-      cpuSpawn(this.cpuArrays, this.uniforms, this.normalizedProps.maxParticles)
+      const cpu = this.ensureCPUArrays()
+      cpuSpawn(cpu, this.uniforms, this.normalizedProps.maxParticles)
       markAllDirty(this.storage)
     } else {
       ;(
@@ -578,6 +582,9 @@ export class VFXParticleSystem {
         }
       ).computeAsync(this.computeSpawn)
     }
+    if (this.sortEnabled && this.gpuSortEnabled) {
+      this.gpuSortUrgentFrames = Math.max(this.gpuSortUrgentFrames, 2)
+    }
 
     if (restore) restore()
   }
@@ -585,18 +592,33 @@ export class VFXParticleSystem {
   async update(delta: number): Promise<void> {
     if (!this.initialized || !this.renderer) return
 
+    this.pendingUpdateDelta += delta
+    if (this.updateInFlight) return this.updateInFlight
+
+    this.updateInFlight = (async () => {
+      while (this.pendingUpdateDelta > 0) {
+        const mergedDelta = this.pendingUpdateDelta
+        this.pendingUpdateDelta = 0
+        await this.runUpdate(mergedDelta)
+      }
+    })().finally(() => {
+      this.updateInFlight = null
+    })
+
+    return this.updateInFlight
+  }
+
+  private async runUpdate(delta: number): Promise<void> {
+    if (!this.initialized || !this.renderer) return
+
     const u = this.uniforms as unknown as UniformAccessor
     u.deltaTime.value = delta
     u.turbulenceTime.value += delta * this.turbulenceSpeed
 
     if (this.useCPUSimulation) {
-      // Re-extract CPU arrays in case WebGPU repacked vec3→vec4 stride
-      this.cpuArrays = extractCPUArrays(
-        this.storage,
-        this.normalizedProps.maxParticles
-      )
+      const cpu = this.ensureCPUArrays()
       cpuUpdate(
-        this.cpuArrays,
+        cpu,
         this.uniforms,
         this.curveTexture,
         this.normalizedProps.maxParticles,
@@ -633,17 +655,27 @@ export class VFXParticleSystem {
       await renderer.computeAsync(this.computeUpdate)
 
       if (this.sortEnabled && this.gpuSortEnabled && this.computeSortDistance) {
-        this.sortCameraPosUniform.value.set(
-          this.cameraPosition[0],
-          this.cameraPosition[1],
-          this.cameraPosition[2]
-        )
-        await renderer.computeAsync(this.computeSortDistance)
+        const shouldSortThisFrame =
+          this.gpuSortUrgentFrames > 0 ||
+          this.gpuSortFrameCounter % this.gpuSortFrameInterval === 0
 
-        for (const pass of this.sortPasses) {
-          this.sortBlockSizeUniform.value = pass.blockSize
-          this.sortSubBlockSizeUniform.value = pass.subBlockSize
-          await renderer.computeAsync(this.computeSortStep)
+        this.gpuSortFrameCounter++
+        if (shouldSortThisFrame) {
+          this.sortCameraPosUniform.value.set(
+            this.cameraPosition[0],
+            this.cameraPosition[1],
+            this.cameraPosition[2]
+          )
+          await renderer.computeAsync(this.computeSortDistance)
+
+          for (const pass of this.sortPasses) {
+            this.sortBlockSizeUniform.value = pass.blockSize
+            this.sortSubBlockSizeUniform.value = pass.subBlockSize
+            await renderer.computeAsync(this.computeSortStep)
+          }
+        }
+        if (this.gpuSortUrgentFrames > 0) {
+          this.gpuSortUrgentFrames--
         }
       }
 
@@ -692,11 +724,8 @@ export class VFXParticleSystem {
     ;(this.uniforms as unknown as UniformAccessor).trailHead.value = 0
 
     if (this.useCPUSimulation) {
-      this.cpuArrays = extractCPUArrays(
-        this.storage,
-        this.normalizedProps.maxParticles
-      )
-      cpuInit(this.cpuArrays, this.normalizedProps.maxParticles)
+      const cpu = this.ensureCPUArrays()
+      cpuInit(cpu, this.normalizedProps.maxParticles)
       markAllDirty(this.storage)
     } else {
       const renderer = this.renderer as unknown as {
@@ -707,6 +736,9 @@ export class VFXParticleSystem {
         renderer.computeAsync(this.computeSortInit)
       }
     }
+    this.pendingUpdateDelta = 0
+    this.gpuSortFrameCounter = 0
+    this.gpuSortUrgentFrames = 0
     this.nextIndex = 0
   }
 
@@ -743,6 +775,17 @@ export class VFXParticleSystem {
     this.sortEnabled = enabled
   }
 
+  setSortFrameInterval(interval: number | null | undefined): void {
+    if (!this.gpuSortEnabled) return
+    if (interval === null || interval === undefined || interval <= 0) {
+      this.gpuSortFrameInterval = this.resolveGpuSortInterval(
+        this.normalizedProps.maxParticles
+      )
+      return
+    }
+    this.gpuSortFrameInterval = Math.max(1, Math.floor(interval))
+  }
+
   setCameraPosition(pos: [number, number, number]): void {
     this.cameraPosition[0] = pos[0]
     this.cameraPosition[1] = pos[1]
@@ -751,6 +794,48 @@ export class VFXParticleSystem {
 
   setCurveTexture(texture: THREE.DataTexture): void {
     this.curveTexture = texture
+  }
+
+  private ensureCPUArrays(): CPUStorageArrays {
+    if (!this.cpuArrays || this.haveCPUStorageRefsChanged()) {
+      this.cpuArrays = extractCPUArrays(
+        this.storage,
+        this.normalizedProps.maxParticles
+      )
+    }
+    return this.cpuArrays
+  }
+
+  private haveCPUStorageRefsChanged(): boolean {
+    if (!this.cpuArrays) return true
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const arrOf = (node: any): Float32Array | null =>
+      (node?.value?.array as Float32Array) ?? null
+
+    const currentPositions = arrOf(this.storage.positions)
+    const currentVelocities = arrOf(this.storage.velocities)
+    const currentLifetimes = arrOf(this.storage.lifetimes)
+    const currentFadeRates = arrOf(this.storage.fadeRates)
+    const currentSizes = arrOf(this.storage.particleSizes)
+
+    if (
+      currentPositions !== this.cpuArrays.positions ||
+      currentVelocities !== this.cpuArrays.velocities ||
+      currentLifetimes !== this.cpuArrays.lifetimes ||
+      currentFadeRates !== this.cpuArrays.fadeRates ||
+      currentSizes !== this.cpuArrays.particleSizes
+    ) {
+      return true
+    }
+
+    return false
+  }
+
+  private resolveGpuSortInterval(maxParticles: number): number {
+    if (maxParticles >= 200000) return 4
+    if (maxParticles >= 100000) return 3
+    if (maxParticles >= 50000) return 2
+    return 1
   }
 
   private buildSortPasses(

@@ -313,4 +313,6 @@ export type BaseParticleProps = {
   trail?: TrailConfig
   /** Enable back-to-front particle sorting (GPU bitonic on WebGPU, CPU radix on WebGL) */
   sortParticles?: boolean
+  /** GPU sort throttle: run sort every N frames on WebGPU (1 = every frame, null/undefined = auto) */
+  sortFrameInterval?: number | null
 }

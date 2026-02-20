@@ -95,6 +95,7 @@ export const DEFAULT_VALUES = Object.freeze({
   collision: null,
   trail: null,
   sortParticles: false,
+  sortFrameInterval: null,
 })
 
 // Global state for the debug panel
@@ -4524,10 +4525,22 @@ const DebugPanelContent = ({ initialValues, onUpdate, mode = 'r3f' }) => {
               onChange={(v) => update('attractToCenter', v)}
             />
             <CheckboxInput
-              label="Sort Particles (CPU)"
+              label="Sort Particles"
               value={values.sortParticles}
               onChange={(v) => update('sortParticles', v)}
             />
+            {values.sortParticles && (
+              <NumberInput
+                label="Sort Every N Frames (GPU)"
+                value={values.sortFrameInterval ?? 1}
+                onChange={(v) =>
+                  update('sortFrameInterval', Math.max(1, Math.round(v)))
+                }
+                min={1}
+                max={8}
+                step={1}
+              />
+            )}
           </Section>
         </div>
       )}

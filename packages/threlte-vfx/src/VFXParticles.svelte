@@ -79,6 +79,8 @@ let {
   softParticles = false,
   softDistance = 0.5,
   collision = null,
+  sortParticles = false,
+  sortFrameInterval = null,
   curveTexturePath = null,
   depthTest = true,
   renderOrder = 0,
@@ -136,12 +138,15 @@ let {
   softParticles?: boolean
   softDistance?: number
   collision?: CollisionConfig | null
+  sortParticles?: boolean
+  sortFrameInterval?: number | null
   curveTexturePath?: string | null
   depthTest?: boolean
   renderOrder?: number
 } = $props()
 
-const { renderer } = useThrelte()
+const threlteCtx = useThrelte() as any
+const { renderer } = threlteCtx
 
 let mounted = false
 
@@ -236,6 +241,11 @@ function buildOptions(): VFXParticleSystemOptions {
     softParticles: (dbg?.softParticles ?? softParticles) as boolean,
     softDistance: (dbg?.softDistance ?? softDistance) as number,
     collision: (dbg?.collision ?? collision) as CollisionConfig | null,
+    sortParticles: (dbg?.sortParticles ?? sortParticles) as boolean,
+    sortFrameInterval:
+      dbg?.sortFrameInterval !== undefined
+        ? (dbg.sortFrameInterval as number | null)
+        : (sortFrameInterval as number | null),
     backdropNode: backdropNode as VFXParticleSystemOptions['backdropNode'],
     opacityNode: opacityNode as VFXParticleSystemOptions['opacityNode'],
     colorNode: colorNode as VFXParticleSystemOptions['colorNode'],
@@ -386,6 +396,12 @@ function handleDebugUpdate(newValues: Record<string, unknown>) {
   if ('delay' in newValues) _system.setDelay((newValues.delay as number) ?? 0)
   if ('emitCount' in newValues)
     _system.setEmitCount((newValues.emitCount as number) ?? 1)
+  if ('sortParticles' in newValues)
+    _system.setSortEnabled(!!newValues.sortParticles)
+  if ('sortFrameInterval' in newValues)
+    _system.setSortFrameInterval(
+      (newValues.sortFrameInterval as number | null | undefined) ?? null
+    )
 
   if (newValues.autoStart !== undefined) {
     _emitting = newValues.autoStart as boolean
@@ -519,6 +535,8 @@ function initDebugPanel() {
         softParticles,
         softDistance,
         collision,
+        sortParticles,
+        sortFrameInterval,
         ...detectGeometryTypeAndArgs(geometry),
       }
 
@@ -646,6 +664,8 @@ $effect(() => {
     stretchBySpeed,
     delay,
     emitCount,
+    sortParticles,
+    sortFrameInterval,
   ]
 
   if (debug) return
@@ -657,6 +677,8 @@ $effect(() => {
     _system.setDelay(delay)
     _system.setEmitCount(emitCount)
     _system.setTurbulenceSpeed(turbulence?.speed ?? 1)
+    _system.setSortEnabled(sortParticles)
+    _system.setSortFrameInterval(sortFrameInterval)
 
     const normalized = normalizeProps({
       size,
@@ -696,7 +718,16 @@ $effect(() => {
 // Frame loop
 useTask((delta) => {
   if (!_system || !_system.initialized) return
-  _system.update(delta)
+  const cam =
+    threlteCtx.camera?.current ??
+    threlteCtx.camera?.value ??
+    threlteCtx.camera ??
+    null
+  const pos = cam?.position
+  if (pos) {
+    _system.setCameraPosition([pos.x, pos.y, pos.z])
+  }
+  void _system.update(delta)
   if (_emitting) {
     _system.autoEmit(delta)
   }

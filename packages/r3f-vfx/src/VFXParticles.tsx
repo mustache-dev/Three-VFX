@@ -112,6 +112,7 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
       collision = null,
       trail = null,
       sortParticles = false,
+      sortFrameInterval = null,
       debug = false,
       curveTexturePath = null,
       depthTest = true,
@@ -265,6 +266,10 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
             collision: dbg?.collision ?? collision,
             trail: dbg?.trail ?? trail,
             sortParticles: dbg?.sortParticles ?? sortParticles,
+            sortFrameInterval:
+              dbg?.sortFrameInterval !== undefined
+                ? dbg.sortFrameInterval
+                : sortFrameInterval,
             backdropNode,
             opacityNode,
             colorNode,
@@ -327,6 +332,7 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
       system.setDelay(delay)
       system.setEmitCount(emitCount)
       system.setTurbulenceSpeed(turbulence?.speed ?? 1)
+      system.setSortFrameInterval(sortFrameInterval)
 
       const normalized = normalizeProps({
         size,
@@ -397,6 +403,7 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
       stretchBySpeed,
       delay,
       emitCount,
+      sortFrameInterval,
     ])
 
     // Public spawn - uses system position as offset, supports overrides
@@ -415,14 +422,14 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
     )
 
     // Update each frame + auto emit
-    useFrame(async (state, delta) => {
+    useFrame((state, delta) => {
       if (!system.initialized) return
 
       // Pass camera position for CPU depth sorting
       const cam = state.camera.position
       system.setCameraPosition([cam.x, cam.y, cam.z])
 
-      await system.update(delta)
+      void system.update(delta)
 
       if (emitting) {
         system.autoEmit(delta)
@@ -602,6 +609,8 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
           system.setEmitCount(newValues.emitCount ?? 1)
         if ('sortParticles' in newValues)
           system.setSortEnabled(!!newValues.sortParticles)
+        if ('sortFrameInterval' in newValues)
+          system.setSortFrameInterval(newValues.sortFrameInterval ?? null)
 
         // Update emitting state
         if (newValues.autoStart !== undefined) {
@@ -752,6 +761,8 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
             softDistance,
             collision,
             trail,
+            sortParticles,
+            sortFrameInterval,
             ...detectGeometryTypeAndArgs(geometry),
           }
 
