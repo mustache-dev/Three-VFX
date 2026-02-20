@@ -1,5 +1,5 @@
 import * as THREE from 'three/webgpu'
-import { instancedArray } from 'three/tsl'
+import { instancedArray, uniform } from 'three/tsl'
 import type {
   VFXParticleSystemOptions,
   NormalizedParticleProps,
@@ -21,6 +21,9 @@ import {
   createInitCompute,
   createSpawnCompute,
   createUpdateCompute,
+  createSortInitCompute,
+  createDistanceCompute,
+  createSortStepCompute,
   createParticleMaterial,
   createTrailHistoryCompute,
   createTrailHistoryPositionNode,
@@ -87,9 +90,25 @@ export class VFXParticleSystem {
 
   // Sort state
   private sortEnabled: boolean
+  private gpuSortEnabled: boolean = false
   private sortScratch: SortScratch | null = null
   private cameraPosition: [number, number, number] = [0, 0, 0]
-  // True when using CPU simulation (WebGL, or WebGPU with sort enabled)
+  private sortIndices: ReturnType<typeof instancedArray> | null = null
+  private sortDistances: ReturnType<typeof instancedArray> | null = null
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private computeSortInit: any = null
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private computeSortDistance: any = null
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private computeSortStep: any = null
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private sortCameraPosUniform: any = null
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private sortBlockSizeUniform: any = null
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private sortSubBlockSizeUniform: any = null
+  private sortPasses: Array<{ blockSize: number; subBlockSize: number }> = []
+  // True when using CPU simulation (WebGL backend only)
   private useCPUSimulation: boolean = false
 
   constructor(
@@ -155,17 +174,47 @@ export class VFXParticleSystem {
     // Detect backend
     this.isWebGL = !isWebGPUBackend(renderer)
 
-    // Sort setup — MUST happen before compute shader creation so shaders see particleSeeds
+    // Sort setup
     this.sortEnabled = options.sortParticles ?? false
     if (this.sortEnabled) {
       this.storage.particleSeeds = instancedArray(np.maxParticles, 'float')
-      this.sortScratch = createSortScratch(np.maxParticles)
+      // GPU sort currently relies on storage reads in material vertex path,
+      // which is stable in instanced-geometry mode.
+      this.gpuSortEnabled = !this.isWebGL && !!np.geometry
+      if (!this.gpuSortEnabled) {
+        this.sortScratch = createSortScratch(np.maxParticles)
+      } else {
+        this.sortIndices = instancedArray(np.maxParticles, 'float')
+        this.sortDistances = instancedArray(np.maxParticles, 'float')
+        this.sortCameraPosUniform = uniform(new THREE.Vector3())
+        this.sortBlockSizeUniform = uniform(2)
+        this.sortSubBlockSizeUniform = uniform(2)
+        this.computeSortInit = createSortInitCompute(
+          this.sortIndices,
+          np.maxParticles
+        )
+        this.computeSortDistance = createDistanceCompute(
+          this.storage,
+          this.sortCameraPosUniform,
+          this.sortDistances,
+          np.maxParticles
+        )
+        this.computeSortStep = createSortStepCompute(
+          this.sortIndices,
+          this.sortDistances,
+          this.sortBlockSizeUniform,
+          this.sortSubBlockSizeUniform,
+          np.maxParticles
+        )
+        this.sortPasses = this.buildSortPasses(np.maxParticles)
+      }
     }
 
-    // Use CPU simulation when:
-    // - WebGL backend (no compute shaders)
-    // - WebGPU with sort enabled (CPU arrays must stay in sync for CPU sort)
-    this.useCPUSimulation = this.isWebGL || this.sortEnabled
+    // CPU simulation when:
+    // - WebGL backend
+    // - sort is enabled but GPU sort path is unavailable
+    this.useCPUSimulation =
+      this.isWebGL || (this.sortEnabled && !this.gpuSortEnabled)
     const useCPUSimulation = this.useCPUSimulation
 
     if (useCPUSimulation) {
@@ -184,7 +233,7 @@ export class VFXParticleSystem {
         this.setStorageDynamicUsage()
       }
     } else {
-      // Create compute shaders (WebGPU path, no sort)
+      // Create compute shaders (WebGPU path)
       this.computeInit = createInitCompute(this.storage, np.maxParticles)
       this.computeSpawn = createSpawnCompute(
         this.storage,
@@ -226,6 +275,7 @@ export class VFXParticleSystem {
         backdropNode: options.backdropNode ?? null,
         alphaTestNode: options.alphaTestNode ?? null,
         castShadowNode: options.castShadowNode ?? null,
+        renderOrderIndices: this.gpuSortEnabled ? this.sortIndices : null,
       }
     )
 
@@ -258,11 +308,13 @@ export class VFXParticleSystem {
       cpuInit(this.cpuArrays, this.normalizedProps.maxParticles)
       markAllDirty(this.storage)
     } else {
-      await (
-        this.renderer as unknown as {
-          computeAsync: (c: unknown) => Promise<void>
-        }
-      ).computeAsync(this.computeInit)
+      const renderer = this.renderer as unknown as {
+        computeAsync: (c: unknown) => Promise<void>
+      }
+      await renderer.computeAsync(this.computeInit)
+      if (this.gpuSortEnabled && this.computeSortInit) {
+        await renderer.computeAsync(this.computeSortInit)
+      }
     }
 
     // If curveTexturePath is set, load async and update texture in-place
@@ -575,19 +627,29 @@ export class VFXParticleSystem {
         markUpdateDirty(this.storage, this.features.rotation)
       }
     } else {
-      await (
-        this.renderer as unknown as {
-          computeAsync: (c: unknown) => Promise<void>
+      const renderer = this.renderer as unknown as {
+        computeAsync: (c: unknown) => Promise<void>
+      }
+      await renderer.computeAsync(this.computeUpdate)
+
+      if (this.sortEnabled && this.gpuSortEnabled && this.computeSortDistance) {
+        this.sortCameraPosUniform.value.set(
+          this.cameraPosition[0],
+          this.cameraPosition[1],
+          this.cameraPosition[2]
+        )
+        await renderer.computeAsync(this.computeSortDistance)
+
+        for (const pass of this.sortPasses) {
+          this.sortBlockSizeUniform.value = pass.blockSize
+          this.sortSubBlockSizeUniform.value = pass.subBlockSize
+          await renderer.computeAsync(this.computeSortStep)
         }
-      ).computeAsync(this.computeUpdate)
+      }
 
       // Trail history mode: write current positions to ring buffer
       if (this.computeTrailHistory) {
-        await (
-          this.renderer as unknown as {
-            computeAsync: (c: unknown) => Promise<void>
-          }
-        ).computeAsync(this.computeTrailHistory)
+        await renderer.computeAsync(this.computeTrailHistory)
 
         // Advance ring buffer head pointer
         this.trailHeadValue = (this.trailHeadValue + 1) % this.trailSegments
@@ -637,11 +699,13 @@ export class VFXParticleSystem {
       cpuInit(this.cpuArrays, this.normalizedProps.maxParticles)
       markAllDirty(this.storage)
     } else {
-      ;(
-        this.renderer as unknown as {
-          computeAsync: (c: unknown) => Promise<void>
-        }
-      ).computeAsync(this.computeInit)
+      const renderer = this.renderer as unknown as {
+        computeAsync: (c: unknown) => Promise<void>
+      }
+      renderer.computeAsync(this.computeInit)
+      if (this.gpuSortEnabled && this.computeSortInit) {
+        renderer.computeAsync(this.computeSortInit)
+      }
     }
     this.nextIndex = 0
   }
@@ -669,7 +733,6 @@ export class VFXParticleSystem {
 
   setSortEnabled(enabled: boolean): void {
     // Note: sort must be enabled at construction time via sortParticles option.
-    // Enabling at runtime requires CPU simulation which must be set up in constructor.
     if (enabled && !this.sortEnabled) {
       console.warn(
         'VFXParticleSystem: sortParticles must be enabled at construction time. ' +
@@ -688,6 +751,21 @@ export class VFXParticleSystem {
 
   setCurveTexture(texture: THREE.DataTexture): void {
     this.curveTexture = texture
+  }
+
+  private buildSortPasses(
+    count: number
+  ): Array<{ blockSize: number; subBlockSize: number }> {
+    const passes: Array<{ blockSize: number; subBlockSize: number }> = []
+    let sortExtent = 1
+    while (sortExtent < count) sortExtent <<= 1
+
+    for (let blockSize = 2; blockSize <= sortExtent; blockSize <<= 1) {
+      for (let subBlockSize = blockSize; subBlockSize > 1; subBlockSize >>= 1) {
+        passes.push({ blockSize, subBlockSize })
+      }
+    }
+    return passes
   }
 
   /**

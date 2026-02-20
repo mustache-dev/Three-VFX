@@ -52,8 +52,8 @@ export default function App() {
           <KeyboardControls map={keyboardMap}>
             <Player />
           </KeyboardControls>
-          {/* <Boom />*/}
-          <VFXParticles
+          <Boom />
+          {/* <VFXParticles
             delay={0.48}
             gravity={[0, -10.7, 0]}
             speed={[4.67, 4.67]}
@@ -78,7 +78,7 @@ export default function App() {
               length: 0.5,
               showParticles: true,
             }}
-          />
+          /> */}
 
           {/* <group position={[5, 0, 0]}>
             <VFXParticles debug fallback={<FallbackSprite />} />

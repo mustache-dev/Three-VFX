@@ -36,9 +36,9 @@ export const createDistanceCompute = (
     const diff = position.sub(cameraPosUniform)
     const distSq = diff.dot(diff)
 
-    sortDistances.element(instanceIndex).assign(
-      lifetime.greaterThan(0).select(distSq, float(1e10))
-    )
+    sortDistances
+      .element(instanceIndex)
+      .assign(lifetime.greaterThan(0).select(distSq, float(0)))
   })().compute(maxParticles)
 }
 
@@ -75,10 +75,7 @@ export const createSortStepCompute = (
 
       const shouldSwap = blockDir
         .equal(uint(0))
-        .select(
-          leftDist.lessThan(rightDist),
-          leftDist.greaterThan(rightDist)
-        )
+        .select(leftDist.lessThan(rightDist), leftDist.greaterThan(rightDist))
 
       If(shouldSwap, () => {
         const temp = float(leftSortIdx)

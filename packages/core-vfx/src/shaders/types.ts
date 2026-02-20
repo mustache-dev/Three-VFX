@@ -57,4 +57,6 @@ export type MaterialOptions = {
   backdropNode: Node | ((data: Record<string, Node>) => Node) | null
   alphaTestNode: Node | ((data: Record<string, Node>) => Node) | null
   castShadowNode: Node | ((data: Record<string, Node>) => Node) | null
+  // Optional indirection index buffer for sorted rendering
+  renderOrderIndices?: StorageBufferNode | null
 }

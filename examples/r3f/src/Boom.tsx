@@ -45,7 +45,7 @@ export const Boom = () => {
 
     return vec4(
       finalColor.mul(endProgress.oneMinus()),
-      smokeColor.a.sub(endProgress).mul(0.9)
+      smokeColor.a.sub(endProgress)
     )
   }
 

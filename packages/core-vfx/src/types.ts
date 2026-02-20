@@ -311,6 +311,6 @@ export type BaseParticleProps = {
   collision?: CollisionConfig
   /** Trail rendering via makio-meshline */
   trail?: TrailConfig
-  /** Enable CPU radix sort for back-to-front particle rendering (fixes transparency overlap) */
+  /** Enable back-to-front particle sorting (GPU bitonic on WebGPU, CPU radix on WebGL) */
   sortParticles?: boolean
 }

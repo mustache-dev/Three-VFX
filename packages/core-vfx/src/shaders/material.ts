@@ -1,5 +1,6 @@
 import * as THREE from 'three/webgpu'
 import {
+  int,
   float,
   vec2,
   vec3,
@@ -57,17 +58,21 @@ export const createParticleMaterial = (
     backdropNode,
     alphaTestNode,
     castShadowNode,
+    renderOrderIndices,
   } = options
 
-  const lifetime = storage.lifetimes.element(instanceIndex)
-  const particleSize = storage.particleSizes.element(instanceIndex)
+  const particleIndex = renderOrderIndices
+    ? int(renderOrderIndices.element(instanceIndex))
+    : instanceIndex
+  const lifetime = storage.lifetimes.element(particleIndex)
+  const particleSize = storage.particleSizes.element(particleIndex)
   // Optional arrays (null when feature unused) - use defaults
   const particleRotation =
-    storage.particleRotations?.element(instanceIndex) ?? vec3(0, 0, 0)
-  const pColorStart = storage.particleColorStarts?.element(instanceIndex)
-  const pColorEnd = storage.particleColorEnds?.element(instanceIndex)
-  const particlePos = storage.positions.element(instanceIndex)
-  const particleVel = storage.velocities.element(instanceIndex)
+    storage.particleRotations?.element(particleIndex) ?? vec3(0, 0, 0)
+  const pColorStart = storage.particleColorStarts?.element(particleIndex)
+  const pColorEnd = storage.particleColorEnds?.element(particleIndex)
+  const particlePos = storage.positions.element(particleIndex)
+  const particleVel = storage.velocities.element(particleIndex)
 
   const progress = float(1).sub(lifetime)
 
@@ -159,7 +164,7 @@ export const createParticleMaterial = (
     color: currentColor,
     intensifiedColor,
     shapeMask,
-    index: instanceIndex,
+    index: particleIndex,
   }
 
   // Apply custom opacity node if provided
@@ -391,7 +396,9 @@ export const createParticleMaterial = (
         : colorNode
       : defaultColor
 
-    mat.positionNode = storage.positions.toAttribute()
+    mat.positionNode = renderOrderIndices
+      ? particlePos
+      : storage.positions.toAttribute()
     mat.scaleNode = particleSize.mul(sizeMultiplier)
     mat.rotationNode = particleRotation.y
     mat.transparent = true
