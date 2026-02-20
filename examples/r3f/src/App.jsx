@@ -20,6 +20,7 @@ import {
   vec3,
   vec4,
 } from 'three/tsl'
+import { OrbitControls } from '@react-three/drei/webgpu'
 
 function FallbackSprite() {
   const texture = useLoader(THREE.TextureLoader, './fallback.png')
@@ -48,10 +49,11 @@ export default function App() {
         <Suspense fallback={null}>
           <SceneLight />
           <WebGPUPostProcessing />
-          <Floor />
-          <KeyboardControls map={keyboardMap}>
+          {/* <Floor />*/}
+          {/* <KeyboardControls map={keyboardMap}>
             <Player />
-          </KeyboardControls>
+          </KeyboardControls>*/}
+          <OrbitControls />
           <Boom />
           {/* <VFXParticles
             delay={0.48}
@@ -86,7 +88,7 @@ export default function App() {
         </Suspense>
       </Canvas>
 
-      <Loader />
+      {/* <Loader />*/}
     </>
   )
 }
