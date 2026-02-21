@@ -105,37 +105,47 @@ The main particle system component.
 
 #### Basic Props
 
-| Prop           | Type        | Default     | Description                                 |
-| -------------- | ----------- | ----------- | ------------------------------------------- |
-| `name`         | `string`    | -           | Register system for use with VFXEmitter     |
-| `maxParticles` | `number`    | `10000`     | Maximum number of particles                 |
-| `autoStart`    | `boolean`   | `true`      | Start emitting automatically                |
-| `delay`        | `number`    | `0`         | Seconds between emissions (0 = every frame) |
-| `emitCount`    | `number`    | `1`         | Particles to emit per burst                 |
-| `position`     | `[x, y, z]` | `[0, 0, 0]` | Emitter position                            |
+| Prop           | Type        | Default     | Description                                     |
+| -------------- | ----------- | ----------- | ----------------------------------------------- |
+| `name`         | `string`    | -           | Register system for use with VFXEmitter         |
+| `maxParticles` | `number`    | `10000`     | Maximum number of particles                     |
+| `autoStart`    | `boolean`   | `true`      | Start emitting automatically                    |
+| `delay`        | `number`    | `0`         | Seconds between emissions (0 = every frame)     |
+| `emitCount`    | `number`    | `1`         | Particles to emit per burst                     |
+| `position`     | `[x, y, z]` | `[0, 0, 0]` | Emitter position                                |
+| `debug`        | `boolean`   | `false`     | Show interactive debug panel (lazy-loads debug-vfx) |
 
 #### Appearance Props
 
 | Prop          | Type                     | Default       | Description                                                 |
 | ------------- | ------------------------ | ------------- | ----------------------------------------------------------- |
 | `size`        | `number \| [min, max]`   | `[0.1, 0.3]`  | Particle size range                                         |
-| `colorStart`  | `string[]`               | `["#ffffff"]` | Starting colors (random pick)                               |
+| `colorStart`  | `string[]`               | `["#ffffff"]` | Starting colors (random pick per particle)                  |
 | `colorEnd`    | `string[] \| null`       | `null`        | Ending colors (null = no transition)                        |
 | `fadeSize`    | `number \| [start, end]` | `[1, 0]`      | Size multiplier over lifetime                               |
 | `fadeOpacity` | `number \| [start, end]` | `[1, 0]`      | Opacity over lifetime                                       |
 | `appearance`  | `Appearance`             | `GRADIENT`    | Shape: `DEFAULT`, `GRADIENT`, `CIRCULAR`                    |
 | `intensity`   | `number`                 | `1`           | Color intensity multiplier                                  |
 | `blending`    | `Blending`               | `NORMAL`      | Blend mode: `NORMAL`, `ADDITIVE`, `MULTIPLY`, `SUBTRACTIVE` |
+| `side`        | `Side`                   | `DOUBLE`      | Face culling: `FRONT`, `BACK`, `DOUBLE`                     |
 
 #### Physics Props
 
-| Prop        | Type                    | Default                   | Description                  |
-| ----------- | ----------------------- | ------------------------- | ---------------------------- |
-| `lifetime`  | `number \| [min, max]`  | `[1, 2]`                  | Particle lifetime in seconds |
-| `speed`     | `number \| [min, max]`  | `[0.1, 0.1]`              | Initial speed                |
-| `direction` | `Range3D \| [min, max]` | `[[-1,1], [0,1], [-1,1]]` | Emission direction per axis  |
-| `gravity`   | `[x, y, z]`             | `[0, 0, 0]`               | Gravity vector               |
-| `friction`  | `FrictionConfig`        | `{ intensity: 0 }`        | Velocity damping             |
+| Prop                      | Type                    | Default                   | Description                                    |
+| ------------------------- | ----------------------- | ------------------------- | ---------------------------------------------- |
+| `lifetime`                | `number \| [min, max]`  | `[1, 2]`                  | Particle lifetime in seconds                   |
+| `speed`                   | `number \| [min, max]`  | `[0.1, 0.1]`              | Initial speed                                  |
+| `direction`               | `Range3D \| [min, max]` | `[[-1,1], [0,1], [-1,1]]` | Emission direction per axis                    |
+| `gravity`                 | `[x, y, z]`             | `[0, 0, 0]`               | Gravity vector                                 |
+| `friction`                | `FrictionConfig`        | `{ intensity: 0 }`        | Velocity damping                               |
+| `startPositionAsDirection`| `boolean`               | `false`                   | Use spawn offset as velocity direction (radial emission) |
+
+```ts
+interface FrictionConfig {
+  intensity: number // Drag amount
+  easing?: 'linear' | 'easeIn' | 'easeOut' | 'easeInOut' // Deceleration curve
+}
+```
 
 #### Emitter Shape Props
 
@@ -153,13 +163,49 @@ The main particle system component.
 
 | Prop                | Type                    | Default    | Description                                                |
 | ------------------- | ----------------------- | ---------- | ---------------------------------------------------------- |
-| `geometry`          | `BufferGeometry`        | `null`     | Custom particle geometry                                   |
-| `lighting`          | `Lighting`              | `STANDARD` | Material: `BASIC`, `STANDARD`, `PHYSICAL`                  |
+| `geometry`          | `BufferGeometry`        | `null`     | Custom particle geometry (switches to instanced mesh mode) |
+| `lighting`          | `Lighting`              | `STANDARD` | Material: `BASIC` (unlit), `STANDARD` (PBR), `PHYSICAL` (full PBR) |
+| `lightingParams`    | `LightingParams`        | `null`     | PBR material parameters (see below)                        |
 | `shadow`            | `boolean`               | `false`    | Enable shadow casting/receiving                            |
-| `orientToDirection` | `boolean`               | `false`    | Orient geometry to velocity                                |
+| `orientToDirection` | `boolean`               | `false`    | Orient geometry to velocity direction                      |
 | `orientAxis`        | `string`                | `"z"`      | Axis to align: `"x"`, `"y"`, `"z"`, `"-x"`, `"-y"`, `"-z"` |
 | `rotation`          | `Range3D \| [min, max]` | `[0, 0]`   | Initial rotation per axis                                  |
 | `rotationSpeed`     | `Range3D \| [min, max]` | `[0, 0]`   | Rotation speed rad/s                                       |
+
+**`lightingParams`** gives full control over PBR material properties when using `lighting: 'standard'` or `'physical'`:
+
+```ts
+interface LightingParams {
+  roughness?: number          // Surface roughness (0 = mirror, 1 = matte)
+  metalness?: number          // Metallic factor (0 = dielectric, 1 = metal)
+  emissive?: string           // Emissive color hex string
+  emissiveIntensity?: number  // Emissive brightness
+  envMapIntensity?: number    // Environment map strength
+  // Physical mode only:
+  clearcoat?: number          // Clearcoat layer intensity
+  clearcoatRoughness?: number // Clearcoat roughness
+  transmission?: number       // Glass-like transparency
+  thickness?: number          // Volume thickness for transmission
+  ior?: number                // Index of refraction
+  iridescence?: number        // Iridescence effect intensity
+  iridescenceIOR?: number     // Iridescence index of refraction
+}
+```
+
+```tsx
+<VFXParticles
+  geometry={gemGeometry}
+  lighting="physical"
+  lightingParams={{
+    roughness: 0.3,
+    metalness: 0.8,
+    clearcoat: 1,
+    clearcoatRoughness: 0.1,
+    iridescence: 1,
+    iridescenceIOR: 1.5,
+  }}
+/>
+```
 
 #### Stretch Props
 
@@ -221,6 +267,79 @@ interface CollisionConfig {
 }
 ```
 
+#### Trail Props
+
+| Prop    | Type          | Default | Description                 |
+| ------- | ------------- | ------- | --------------------------- |
+| `trail` | `TrailConfig` | `null`  | Trail rendering via meshline |
+
+Requires `makio-meshline` installed as a peer dependency.
+
+```ts
+interface TrailConfig {
+  segments?: number // Trail resolution (default: 32)
+  width?: number // Line width (default: 0.1)
+  taper?: boolean | ((t: number) => number) // Width taper (default: true)
+  opacity?: number | ((data: TrailOpacityData) => Node) // Opacity control (default: 1)
+  length?: number // History in seconds (default: 0.5)
+  showParticles?: boolean // Show particles alongside trails (default: true)
+  fragmentColorFn?: (data: TrailData) => Node // Per-pixel trail coloring
+}
+```
+
+**`taper`** controls how the trail width varies from head to tail:
+
+```tsx
+// Default linear taper (thick at head, thin at tail)
+trail={{ taper: true }}
+
+// No tapering (uniform width)
+trail={{ taper: false }}
+
+// Custom JS callback: t goes 0 (head) → 1 (tail), return width multiplier
+trail={{ taper: (t) => Math.sin(t * Math.PI) }} // fat middle, thin ends
+trail={{ taper: (t) => Math.abs(Math.sin(t * Math.PI * 4)) }} // wavy
+```
+
+**`opacity`** controls trail transparency. As a number it sets global opacity. As a TSL callback it runs per-vertex in the fragment shader with full access to particle data:
+
+```tsx
+// Global opacity
+trail={{ opacity: 0.5 }}
+
+// TSL callback with particle data
+trail={{
+  opacity: ({ alpha, trailProgress, progress, lifetime, position, velocity, size }) => {
+    // Fade based on trail position and particle lifetime
+    return alpha.mul(trailProgress.oneMinus()).mul(lifetime)
+  }
+}}
+```
+
+#### Sorting Props
+
+| Prop                | Type      | Default | Description                                         |
+| ------------------- | --------- | ------- | --------------------------------------------------- |
+| `sortParticles`     | `boolean` | `false` | Enable back-to-front depth sorting for transparency |
+| `sortFrameInterval` | `number`  | `null`  | Run sort every N frames (WebGPU only, performance tuning) |
+
+When enabled, particles are sorted by distance to camera for correct alpha blending. On WebGPU this uses a GPU bitonic sort; on WebGL fallback it uses a CPU radix sort.
+
+```tsx
+<VFXParticles
+  sortParticles
+  sortFrameInterval={2}  // Sort every other frame for better perf
+  blending="normal"
+/>
+```
+
+#### Rendering Props
+
+| Prop          | Type      | Default | Description                                      |
+| ------------- | --------- | ------- | ------------------------------------------------ |
+| `depthTest`   | `boolean` | `true`  | Test against depth buffer                        |
+| `renderOrder` | `number`  | `0`     | Three.js render order (higher = renders on top)  |
+
 #### Soft Particles Props
 
 | Prop            | Type      | Default | Description                  |
@@ -242,12 +361,13 @@ interface CurveData {
 }
 ```
 
-| Prop                 | Type        | Description                              |
-| -------------------- | ----------- | ---------------------------------------- |
-| `fadeSizeCurve`      | `CurveData` | Size multiplier over lifetime            |
-| `fadeOpacityCurve`   | `CurveData` | Opacity over lifetime                    |
-| `velocityCurve`      | `CurveData` | Velocity multiplier (overrides friction) |
-| `rotationSpeedCurve` | `CurveData` | Rotation speed multiplier                |
+| Prop                 | Type        | Description                                       |
+| -------------------- | ----------- | ------------------------------------------------- |
+| `fadeSizeCurve`      | `CurveData` | Size multiplier over lifetime                     |
+| `fadeOpacityCurve`   | `CurveData` | Opacity over lifetime                             |
+| `velocityCurve`      | `CurveData` | Velocity multiplier (overrides friction)          |
+| `rotationSpeedCurve` | `CurveData` | Rotation speed multiplier                         |
+| `curveTexturePath`   | `string`    | Path to pre-baked curve texture (faster startup)  |
 
 #### Custom Shader Props
 
@@ -520,6 +640,9 @@ import type {
   TurbulenceConfig,
   CollisionConfig,
   AttractorConfig,
+  TrailConfig,
+  TrailData,
+  TrailOpacityData,
 } from 'r3f-vfx'
 ```
 

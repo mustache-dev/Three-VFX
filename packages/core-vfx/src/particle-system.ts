@@ -383,28 +383,8 @@ export class VFXParticleSystem {
           segments
         )
 
-        // Width function: taper trail from head to tail
+        // Width taper: boolean | function | undefined
         const taper = trail.taper !== false
-        const widthFn = taper
-          ? Fn(([width]: [any]) => {
-              const lifetime = this.storage.lifetimes.element(instanceIndex)
-              // Hide dead particles by setting width to 0
-              return lifetime.greaterThan(0).select(
-                width
-                  .mul(
-                    float(1)
-                      .sub(
-                        width.div(width)
-                        // width comes in as the interpolated width value
-                        // We use the built-in progress for tapering
-                      )
-                      .add(float(1))
-                  )
-                  .mul(float(0.5)),
-                float(0)
-              )
-            })
-          : undefined
 
         // Color function: replicate particle material color logic
         const { mix } = await import('three/tsl')
@@ -482,6 +462,45 @@ export class VFXParticleSystem {
           )
         }
 
+        // Opacity function: wrap user callback with particle data
+        let opacityFnWrapped
+        if (typeof trail.opacity === 'function') {
+          const userOpacityFn = trail.opacity
+          opacityFnWrapped = Fn(
+            ([alpha, vProgress, side]: [any, any, any]) => {
+              const lifetime3 = this.storage.lifetimes.element(instanceIndex)
+              const lifeProgress3 = float(1).sub(lifetime3)
+              const pColorStart3 =
+                this.storage.particleColorStarts?.element(instanceIndex)
+              const pColorEnd3 =
+                this.storage.particleColorEnds?.element(instanceIndex)
+              const pColor3 =
+                pColorStart3 && pColorEnd3
+                  ? mix(pColorStart3, pColorEnd3, lifeProgress3)
+                  : mix(
+                      this.uniforms.colorStart0,
+                      this.uniforms.colorEnd0 ?? this.uniforms.colorStart0,
+                      lifeProgress3
+                    )
+
+              return userOpacityFn({
+                alpha,
+                trailProgress: vProgress,
+                side,
+                progress: lifeProgress3,
+                lifetime: lifetime3,
+                position: this.storage.positions.element(instanceIndex),
+                velocity: this.storage.velocities.element(instanceIndex),
+                size: this.storage.particleSizes.element(instanceIndex),
+                ...(pColorStart3 && { colorStart: pColorStart3 }),
+                ...(pColorEnd3 && { colorEnd: pColorEnd3 }),
+                particleColor: pColor3,
+                index: instanceIndex,
+              })
+            }
+          )
+        }
+
         // Build MeshLine
         const line = new MeshLine()
           .segments(segments)
@@ -490,15 +509,21 @@ export class VFXParticleSystem {
           .instances(maxParticles)
           .lineWidth(trail.width ?? 0.1)
           .sizeAttenuation(true)
-          .opacity(trail.opacity ?? 1)
+          .opacity(typeof trail.opacity === 'number' ? trail.opacity : 1)
           .transparent(true)
+
+        if (opacityFnWrapped) {
+          line.opacityFn(opacityFnWrapped)
+        }
 
         if (fragmentColorFnWrapped) {
           line.fragmentColorFn(fragmentColorFnWrapped)
           line.needsUV(true)
         }
 
-        if (taper) {
+        if (typeof trail.taper === 'function') {
+          line.widthCallback(trail.taper)
+        } else if (taper) {
           line.widthCallback((t: number) => 1 - t)
         }
 

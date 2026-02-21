@@ -75,7 +75,40 @@ export default function App() {
             <Player />
           </KeyboardControls>*/}
           <OrbitControls />
-          <Boom />
+          {/* <Boom />*/}
+          <VFXParticles
+            debug
+            delay={0.23}
+            gravity={[0, -12.6, 0]}
+            speed={[6.83, 6.83]}
+            direction={[
+              [-1, 1],
+              [1, 1],
+              [-1, 1],
+            ]}
+            appearance="gradient"
+            lighting="standard"
+            emitterShape={1}
+            collision={{
+              plane: {
+                y: 0,
+              },
+              bounce: 0.3,
+              friction: 0.8,
+              die: false,
+              sizeBasedGravity: 0,
+            }}
+            trail={{
+              segments: 32,
+              width: 0.1,
+              taper: (t) => Math.abs(Math.sin(t * Math.PI * 4)),
+              opacity: ({ alpha, trailProgress, lifetime }) => {
+                return alpha.mul(trailProgress.oneMinus()).mul(lifetime)
+              },
+              length: 0.5,
+              showParticles: true,
+            }}
+          />
           {/* <mesh geometry={nodes.Sphere.geometry}>
             <meshBasicNodeMaterial
               transparent
@@ -131,7 +164,7 @@ export default function App() {
           </mesh>*/}
 
           <group position={[-4, -0.2, 0]}>
-            <VFXParticles
+            {/* <VFXParticles
               geometry={nodes.Sphere.geometry}
               delay={1}
               fadeOpacity={[1, 1]}
@@ -184,7 +217,7 @@ export default function App() {
                 const displacement = vec3(0, n.sub(0.5).mul(0.5), 0).mul(1.7)
                 return local.add(displacement.mul(uv().y.smoothstep(1, 0.4)))
               }}
-            />
+            />*/}
             {/* <VFXParticles
               maxParticles={1200}
               autoStart

@@ -29,6 +29,7 @@ export type {
   ResolvedLightingParams,
   TrailConfig,
   TrailData,
+  TrailOpacityData,
   BaseParticleProps,
   NormalizedParticleProps,
   VFXParticleSystemOptions,

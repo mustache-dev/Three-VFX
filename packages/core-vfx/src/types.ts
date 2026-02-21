@@ -68,16 +68,35 @@ export type TrailData = {
   index: unknown // uint: instanceIndex
 }
 
+// Trail opacity data exposed to opacity callback
+export type TrailOpacityData = {
+  alpha: unknown // float: current alpha value
+  trailProgress: unknown // float: 0 (head) → 1 (tail)
+  side: unknown // float: -1 or 1 (which side of the line)
+  // Particle data
+  progress: unknown // float: particle lifetime progress 0→1
+  lifetime: unknown // float: remaining lifetime
+  position: unknown // vec3: particle position
+  velocity: unknown // vec3: particle velocity
+  size: unknown // float: particle size
+  colorStart?: unknown // vec3: per-particle start color (if enabled)
+  colorEnd?: unknown // vec3: per-particle end color (if enabled)
+  particleColor: unknown // vec3: resolved particle color (mix of start→end)
+  index: unknown // uint: instanceIndex
+}
+
 // Trail configuration
 export type TrailConfig = {
   /** Number of trail segments / line resolution (default: 32) */
   segments?: number
   /** Trail line width (default: 0.1) */
   width?: number
-  /** Whether width tapers to 0 at tail (default: true) */
-  taper?: boolean
-  /** Trail opacity (default: 1) */
-  opacity?: number
+  /** Width taper control. true = default linear taper (1-t), false = no taper,
+   *  or a custom function (t: 0=head, 1=tail) => width multiplier (default: true) */
+  taper?: boolean | ((t: number) => number)
+  /** Trail opacity: number for global opacity, or a TSL callback for per-vertex control.
+   *  Callback receives { alpha, trailProgress, side } plus particle data. (default: 1) */
+  opacity?: number | ((data: TrailOpacityData) => unknown)
   /** Trail length in seconds of history (default: 0.5) */
   length?: number
   /** Show particles alongside trails (default: true) */
