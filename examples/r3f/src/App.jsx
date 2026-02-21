@@ -129,58 +129,62 @@ export default function App() {
               })()}
             />
           </mesh>*/}
-          <VFXParticles
-            geometry={nodes.Sphere.geometry}
-            delay={1}
-            fadeOpacity={[1, 1]}
-            maxParticles={20}
-            side={Side.FRONT}
-            gravity={[0, 1, 0]}
-            speed={[1.2, 1.5]}
-            fadeSize={[0, 1]}
-            size={[2, 2]}
-            direction={[
-              [-1, -0.2],
-              [-0, 0],
-              [-0.2, 0.2],
-            ]}
-            appearance="gradient"
-            lighting="standard"
-            emitterShape={1}
-            colorNode={Fn(() => {
-              const color1 = color('#00AAFF')
-              const n = texture(
-                noiseTex2,
-                vec2(uv().x, uv().y.mul(0.3).add(time.mul(0.5)))
-              )
-                .blur(0.4)
-                .r.pow(4)
-              const fresnel = dot(normalView, positionViewDirection).oneMinus()
 
-              const col = color1.mul(n.smoothstep(0, 0.2).add(n.add(0.1)))
-              const finalCol = mix(
-                col,
-                vec3(0),
-                fresnel.step(float(0.7).add(n.sub(0.5).mul(0.1)))
-              )
-              const isRim = fresnel.step(float(0.7).add(n.sub(0.5).mul(0.1)))
-              const alpha = mix(float(0.7), float(1), isRim)
-              return vec4(finalCol, alpha)
-            })()}
-            geometryNode={({ progress, position }, defaultPosition) => {
-              const local = defaultPosition
-              const n = texture(
-                noiseTex,
-                vec2(normalGeometry.x, normalGeometry.y.sub(time.mul(2))).mul(
-                  0.8
-                )
-              ).r
-
-              const displacement = vec3(0, n.sub(0.5).mul(0.5), 0).mul(1.7)
-              return local.add(displacement.mul(uv().y.smoothstep(1, 0.4)))
-            }}
-          />
           <group position={[-4, -0.2, 0]}>
+            <VFXParticles
+              geometry={nodes.Sphere.geometry}
+              delay={1}
+              fadeOpacity={[1, 1]}
+              maxParticles={20}
+              side={Side.FRONT}
+              gravity={[0, 1, 0]}
+              speed={[1.2, 1.5]}
+              fadeSize={[0, 1]}
+              size={[2, 2]}
+              direction={[
+                [-1, -0.2],
+                [-0, 0],
+                [-0.2, 0.2],
+              ]}
+              appearance="gradient"
+              lighting="standard"
+              emitterShape={1}
+              colorNode={Fn(() => {
+                const color1 = color('#00AAFF')
+                const n = texture(
+                  noiseTex2,
+                  vec2(uv().x, uv().y.mul(0.3).add(time.mul(0.5)))
+                )
+                  .blur(0.4)
+                  .r.pow(4)
+                const fresnel = dot(
+                  normalView,
+                  positionViewDirection
+                ).oneMinus()
+
+                const col = color1.mul(n.smoothstep(0, 0.2).add(n.add(0.1)))
+                const finalCol = mix(
+                  col,
+                  vec3(0),
+                  fresnel.step(float(0.7).add(n.sub(0.5).mul(0.1)))
+                )
+                const isRim = fresnel.step(float(0.7).add(n.sub(0.5).mul(0.1)))
+                const alpha = mix(float(0.7), float(1), isRim)
+                return vec4(finalCol, alpha)
+              })()}
+              geometryNode={({ progress, position }, defaultPosition) => {
+                const local = defaultPosition
+                const n = texture(
+                  noiseTex,
+                  vec2(normalGeometry.x, normalGeometry.y.sub(time.mul(2))).mul(
+                    0.8
+                  )
+                ).r
+
+                const displacement = vec3(0, n.sub(0.5).mul(0.5), 0).mul(1.7)
+                return local.add(displacement.mul(uv().y.smoothstep(1, 0.4)))
+              }}
+            />
             {/* <VFXParticles
               maxParticles={1200}
               autoStart
