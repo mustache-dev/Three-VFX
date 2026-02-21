@@ -1,5 +1,6 @@
 import * as THREE from 'three/webgpu'
 import {
+  int,
   float,
   vec2,
   vec3,
@@ -48,26 +49,33 @@ export const createParticleMaterial = (
     flipbook,
     appearance,
     lighting,
+    lightingParams,
     softParticles,
     geometry,
     orientToDirection,
     blending,
+    side,
+    geometryNode,
     opacityNode,
     colorNode,
     backdropNode,
     alphaTestNode,
     castShadowNode,
+    renderOrderIndices,
   } = options
 
-  const lifetime = storage.lifetimes.element(instanceIndex)
-  const particleSize = storage.particleSizes.element(instanceIndex)
+  const particleIndex = renderOrderIndices
+    ? int(renderOrderIndices.element(instanceIndex))
+    : instanceIndex
+  const lifetime = storage.lifetimes.element(particleIndex)
+  const particleSize = storage.particleSizes.element(particleIndex)
   // Optional arrays (null when feature unused) - use defaults
   const particleRotation =
-    storage.particleRotations?.element(instanceIndex) ?? vec3(0, 0, 0)
-  const pColorStart = storage.particleColorStarts?.element(instanceIndex)
-  const pColorEnd = storage.particleColorEnds?.element(instanceIndex)
-  const particlePos = storage.positions.element(instanceIndex)
-  const particleVel = storage.velocities.element(instanceIndex)
+    storage.particleRotations?.element(particleIndex) ?? vec3(0, 0, 0)
+  const pColorStart = storage.particleColorStarts?.element(particleIndex)
+  const pColorEnd = storage.particleColorEnds?.element(particleIndex)
+  const particlePos = storage.positions.element(particleIndex)
+  const particleVel = storage.velocities.element(particleIndex)
 
   const progress = float(1).sub(lifetime)
 
@@ -159,7 +167,7 @@ export const createParticleMaterial = (
     color: currentColor,
     intensifiedColor,
     shapeMask,
-    index: instanceIndex,
+    index: particleIndex,
   }
 
   // Apply custom opacity node if provided
@@ -203,6 +211,28 @@ export const createParticleMaterial = (
       default:
         mat = new THREE.MeshStandardNodeMaterial()
         break
+    }
+
+    if (lighting !== Lighting.BASIC) {
+      const litMat = mat as
+        | THREE.MeshStandardNodeMaterial
+        | THREE.MeshPhysicalNodeMaterial
+      litMat.roughness = lightingParams.roughness
+      litMat.metalness = lightingParams.metalness
+      litMat.emissive.set(lightingParams.emissive)
+      litMat.emissiveIntensity = lightingParams.emissiveIntensity
+      litMat.envMapIntensity = lightingParams.envMapIntensity
+
+      if (lighting === Lighting.PHYSICAL) {
+        const physicalMat = mat as THREE.MeshPhysicalNodeMaterial
+        physicalMat.clearcoat = lightingParams.clearcoat
+        physicalMat.clearcoatRoughness = lightingParams.clearcoatRoughness
+        physicalMat.transmission = lightingParams.transmission
+        physicalMat.thickness = lightingParams.thickness
+        physicalMat.ior = lightingParams.ior
+        physicalMat.iridescence = lightingParams.iridescence
+        physicalMat.iridescenceIOR = lightingParams.iridescenceIOR
+      }
     }
 
     // Calculate effective velocity for stretch
@@ -339,7 +369,12 @@ export const createParticleMaterial = (
     // Apply base scale
     const scaledPos = rotatedPos.mul(baseScale)
 
-    mat.positionNode = scaledPos.add(particlePos)
+    const defaultPosition = scaledPos.add(particlePos)
+    mat.positionNode = geometryNode
+      ? typeof geometryNode === 'function'
+        ? geometryNode(particleData, defaultPosition)
+        : geometryNode
+      : defaultPosition
 
     // Apply custom colorNode if provided, otherwise use default
     const defaultColor = vec4(intensifiedColor, finalOpacity)
@@ -352,7 +387,7 @@ export const createParticleMaterial = (
     mat.transparent = true
     mat.depthWrite = false
     mat.blending = blending
-    mat.side = THREE.DoubleSide
+    mat.side = side
 
     // Apply custom backdrop node if provided
     if (backdropNode) {
@@ -391,7 +426,9 @@ export const createParticleMaterial = (
         : colorNode
       : defaultColor
 
-    mat.positionNode = storage.positions.toAttribute()
+    mat.positionNode = renderOrderIndices
+      ? particlePos
+      : storage.positions.toAttribute()
     mat.scaleNode = particleSize.mul(sizeMultiplier)
     mat.rotationNode = particleRotation.y
     mat.transparent = true

@@ -11,6 +11,8 @@ export const STRUCTURAL_KEYS = [
   'appearance',
   'shadow',
   'orientToDirection',
+  'lightingParams',
+  'geometryNode',
 ] as const
 
 export function resolveFeatures(props: {
@@ -51,7 +53,7 @@ export function resolveFeatures(props: {
   const hasCollision = collision !== null
   const trail = props.trail ?? null
   const hasTrails = trail !== null
-  const hasTrailHistory = hasTrails && trail.mode === 'history'
+  const hasTrailHistory = hasTrails
 
   return {
     needsPerParticleColor,
@@ -108,6 +110,7 @@ export function createStorageArrays(
     lifetimes: instancedArray(maxParticles, 'float'),
     fadeRates: instancedArray(maxParticles, 'float'),
     particleSizes: instancedArray(maxParticles, 'float'),
+    particleSeeds: null,
     particleRotations: null,
     particleColorStarts: null,
     particleColorEnds: null,

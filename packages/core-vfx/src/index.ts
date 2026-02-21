@@ -4,6 +4,7 @@ export { type CoreState, type ParticleSystemRef, coreStore } from './core-store'
 export {
   Appearance,
   Blending,
+  Side,
   EmitterShape,
   AttractorType,
   Easing,
@@ -24,8 +25,11 @@ export type {
   FrictionConfig,
   FlipbookConfig,
   StretchConfig,
+  LightingParams,
+  ResolvedLightingParams,
   TrailConfig,
   TrailData,
+  TrailOpacityData,
   BaseParticleProps,
   NormalizedParticleProps,
   VFXParticleSystemOptions,
@@ -66,9 +70,13 @@ export {
   createInitCompute,
   createSpawnCompute,
   createUpdateCompute,
+  createSortInitCompute,
+  createDistanceCompute,
+  createSortStepCompute,
+  createGatherCompute,
+  createCopyCompute,
   createParticleMaterial,
   selectColor,
-  createTrailProceduralPositionNode,
   createTrailHistoryCompute,
   createTrailHistoryPositionNode,
 } from './shaders'
@@ -98,6 +106,13 @@ export {
   needsRecreation,
   STRUCTURAL_KEYS,
 } from './storage'
+
+// CPU sort
+export {
+  cpuRadixSortParticles,
+  createSortScratch,
+  type SortScratch,
+} from './cpu-sort'
 
 // Particle system class
 export { VFXParticleSystem } from './particle-system'

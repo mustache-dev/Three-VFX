@@ -62,8 +62,23 @@ export class VFXParticles {
     }
   }
 
-  update(delta: number): void {
+  update(
+    delta: number,
+    camera:
+      | { position: { x: number; y: number; z: number } }
+      | [number, number, number]
+      | null = null
+  ): void {
     if (!this.system || !this.system.initialized) return
+
+    if (camera) {
+      if (Array.isArray(camera)) {
+        this.system.setCameraPosition(camera)
+      } else {
+        const pos = camera.position
+        this.system.setCameraPosition([pos.x, pos.y, pos.z])
+      }
+    }
 
     // Auto-emission
     if (this.isEmitting) {
@@ -82,7 +97,7 @@ export class VFXParticles {
       }
     }
 
-    this.system.update(delta)
+    void this.system.update(delta)
   }
 
   dispose(): void {
@@ -230,6 +245,12 @@ export class VFXParticles {
     }
     if ('emitCount' in newValues) {
       this.system.setEmitCount(newValues.emitCount ?? 1)
+    }
+    if ('sortParticles' in newValues) {
+      this.system.setSortEnabled(!!newValues.sortParticles)
+    }
+    if ('sortFrameInterval' in newValues) {
+      this.system.setSortFrameInterval(newValues.sortFrameInterval ?? null)
     }
     if (newValues.autoStart !== undefined) {
       this.isEmitting = newValues.autoStart

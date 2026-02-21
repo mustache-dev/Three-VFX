@@ -13,6 +13,7 @@ import { useVFXStore } from './react-store'
 import {
   Appearance,
   Blending,
+  Side,
   EmitterShape,
   Lighting,
   VFXParticleSystem,
@@ -28,6 +29,7 @@ import {
 export {
   Appearance,
   Blending,
+  Side,
   EmitterShape,
   AttractorType,
   Easing,
@@ -85,13 +87,16 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
       orientAxis = 'z',
       stretchBySpeed = null,
       lighting = Lighting.STANDARD,
+      lightingParams = null,
       shadow = false,
       blending = Blending.NORMAL,
+      side = Side.DOUBLE,
       intensity = 1,
       position = [0, 0, 0],
       autoStart = true,
       delay = 0,
       backdropNode = null,
+      geometryNode = null,
       opacityNode = null,
       colorNode = null,
       alphaTestNode = null,
@@ -111,6 +116,8 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
       softDistance = 0.5,
       collision = null,
       trail = null,
+      sortParticles = false,
+      sortFrameInterval = null,
       debug = false,
       curveTexturePath = null,
       depthTest = true,
@@ -156,6 +163,10 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
       useState(colorStart.length > 1 || colorEnd !== null)
     const [activeNeedsRotation, setActiveNeedsRotation] = useState(
       isNonDefaultRotation(rotation) || isNonDefaultRotation(rotationSpeed)
+    )
+    const lightingParamsKey = useMemo(
+      () => JSON.stringify(lightingParams ?? null),
+      [lightingParams]
     )
 
     // Keep remount-required state in sync with props (when not in debug mode)
@@ -241,8 +252,10 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
             orientAxis: dbg?.orientAxis ?? orientAxis,
             stretchBySpeed: dbg?.stretchBySpeed ?? stretchBySpeed,
             lighting: activeLighting,
+            lightingParams,
             shadow: activeShadow,
             blending: dbg?.blending ?? blending,
+            side: dbg?.side ?? side,
             intensity: dbg?.intensity ?? intensity,
             position: dbg?.position ?? position,
             autoStart: dbg?.autoStart ?? autoStart,
@@ -263,7 +276,13 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
             softDistance: dbg?.softDistance ?? softDistance,
             collision: dbg?.collision ?? collision,
             trail: dbg?.trail ?? trail,
+            sortParticles: dbg?.sortParticles ?? sortParticles,
+            sortFrameInterval:
+              dbg?.sortFrameInterval !== undefined
+                ? dbg.sortFrameInterval
+                : sortFrameInterval,
             backdropNode,
+            geometryNode,
             opacityNode,
             colorNode,
             alphaTestNode,
@@ -297,7 +316,10 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
         alphaMap,
         flipbook,
         blending,
+        side,
+        lightingParamsKey,
         backdropNode,
+        geometryNode,
         opacityNode,
         colorNode,
         alphaTestNode,
@@ -325,6 +347,7 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
       system.setDelay(delay)
       system.setEmitCount(emitCount)
       system.setTurbulenceSpeed(turbulence?.speed ?? 1)
+      system.setSortFrameInterval(sortFrameInterval)
 
       const normalized = normalizeProps({
         size,
@@ -395,6 +418,7 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
       stretchBySpeed,
       delay,
       emitCount,
+      sortFrameInterval,
     ])
 
     // Public spawn - uses system position as offset, supports overrides
@@ -413,10 +437,14 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
     )
 
     // Update each frame + auto emit
-    useFrame(async (_state, delta) => {
+    useFrame((state, delta) => {
       if (!system.initialized) return
 
-      await system.update(delta)
+      // Pass camera position for CPU depth sorting
+      const cam = state.camera.position
+      system.setCameraPosition([cam.x, cam.y, cam.z])
+
+      void system.update(delta)
 
       if (emitting) {
         system.autoEmit(delta)
@@ -594,6 +622,10 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
         if ('delay' in newValues) system.setDelay(newValues.delay ?? 0)
         if ('emitCount' in newValues)
           system.setEmitCount(newValues.emitCount ?? 1)
+        if ('sortParticles' in newValues)
+          system.setSortEnabled(!!newValues.sortParticles)
+        if ('sortFrameInterval' in newValues)
+          system.setSortFrameInterval(newValues.sortFrameInterval ?? null)
 
         // Update emitting state
         if (newValues.autoStart !== undefined) {
@@ -603,6 +635,12 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
         // Update material blending directly
         if (system.material && newValues.blending !== undefined) {
           system.material.blending = newValues.blending
+          system.material.needsUpdate = true
+        }
+
+        // Update material side directly
+        if (system.material && newValues.side !== undefined) {
+          system.material.side = newValues.side
           system.material.needsUpdate = true
         }
 
@@ -727,6 +765,7 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
             lighting,
             shadow,
             blending,
+            side,
             intensity,
             position,
             autoStart,
@@ -744,6 +783,8 @@ export const VFXParticles = forwardRef<unknown, VFXParticlesProps>(
             softDistance,
             collision,
             trail,
+            sortParticles,
+            sortFrameInterval,
             ...detectGeometryTypeAndArgs(geometry),
           }
 

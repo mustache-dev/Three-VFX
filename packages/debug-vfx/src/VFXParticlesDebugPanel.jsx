@@ -1,6 +1,6 @@
 import { createRoot } from 'react-dom/client'
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { Appearance, Blending, EmitterShape, Lighting } from 'core-vfx'
+import { Appearance, Blending, Side, EmitterShape, Lighting } from 'core-vfx'
 import { buildCurveTextureBin } from 'core-vfx'
 import { create } from 'zustand'
 import { GeometryType, geometryDefaults } from './geometry'
@@ -75,6 +75,7 @@ export const DEFAULT_VALUES = Object.freeze({
   lighting: Lighting.STANDARD,
   shadow: false,
   blending: Blending.NORMAL,
+  side: Side.DOUBLE,
   intensity: 1,
   position: [0, 0, 0],
   autoStart: true,
@@ -94,6 +95,8 @@ export const DEFAULT_VALUES = Object.freeze({
   softDistance: 0.5,
   collision: null,
   trail: null,
+  sortParticles: false,
+  sortFrameInterval: null,
 })
 
 // Global state for the debug panel
@@ -3216,6 +3219,7 @@ const DebugPanelContent = ({ initialValues, onUpdate, mode = 'r3f' }) => {
       'rendering',
       'appearance',
       'blending',
+      'side',
       'lighting',
       'shadow',
       'material',
@@ -4265,6 +4269,16 @@ const DebugPanelContent = ({ initialValues, onUpdate, mode = 'r3f' }) => {
               }}
             />
             <SelectInput
+              label="Side"
+              value={values.side ?? Side.DOUBLE}
+              onChange={(v) => update('side', parseInt(v))}
+              options={{
+                Front: Side.FRONT,
+                Back: Side.BACK,
+                Double: Side.DOUBLE,
+              }}
+            />
+            <SelectInput
               label="Lighting"
               value={values.lighting || Lighting.STANDARD}
               onChange={(v) => update('lighting', v)}
@@ -4444,7 +4458,6 @@ const DebugPanelContent = ({ initialValues, onUpdate, mode = 'r3f' }) => {
                       width: 0.1,
                       taper: true,
                       opacity: 1,
-                      mode: 'procedural',
                       length: 0.5,
                       showParticles: true,
                     }
@@ -4453,12 +4466,6 @@ const DebugPanelContent = ({ initialValues, onUpdate, mode = 'r3f' }) => {
             }
             hidden={!matchesSearch('Trail')}
           >
-            <SelectInput
-              label="Mode"
-              value={values.trail?.mode || 'procedural'}
-              onChange={(v) => updateNested('trail', 'mode', v)}
-              options={{ Procedural: 'procedural', History: 'history' }}
-            />
             <NumberInput
               label="Segments"
               value={values.trail?.segments || 32}
@@ -4529,6 +4536,23 @@ const DebugPanelContent = ({ initialValues, onUpdate, mode = 'r3f' }) => {
               value={values.attractToCenter}
               onChange={(v) => update('attractToCenter', v)}
             />
+            <CheckboxInput
+              label="Sort Particles"
+              value={values.sortParticles}
+              onChange={(v) => update('sortParticles', v)}
+            />
+            {values.sortParticles && (
+              <NumberInput
+                label="Sort Every N Frames (GPU)"
+                value={values.sortFrameInterval ?? 1}
+                onChange={(v) =>
+                  update('sortFrameInterval', Math.max(1, Math.round(v)))
+                }
+                min={1}
+                max={8}
+                step={1}
+              />
+            )}
           </Section>
         </div>
       )}

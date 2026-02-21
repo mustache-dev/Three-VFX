@@ -188,6 +188,7 @@ const propOrder = [
   'stretchBySpeed',
   'appearance',
   'blending',
+  'side',
   'lighting',
   'shadow',
   'emitterShape',
@@ -202,6 +203,8 @@ const propOrder = [
   'softParticles',
   'softDistance',
   'attractToCenter',
+  'sortParticles',
+  'sortFrameInterval',
 ]
 
 // Returns true if the key/value should be skipped (is at default)
@@ -271,6 +274,7 @@ const shouldSkipDefault = (
   // Appearance/blending/lighting defaults
   if (key === 'appearance' && value === 0) return true // GRADIENT
   if (key === 'blending' && value === 1) return true // NORMAL
+  if (key === 'side' && value === 2) return true // DOUBLE
   if (key === 'lighting' && value === 1) return true // STANDARD
 
   if (key === 'shadow' && value === false) return true
@@ -301,6 +305,10 @@ const shouldSkipDefault = (
   if (key === 'softParticles' && value === false) return true
   if (key === 'softDistance' && !values.softParticles) return true
   if (key === 'attractToCenter' && value === false) return true
+  if (key === 'sortParticles' && value === false) return true
+  if (key === 'sortFrameInterval' && !values.sortParticles) return true
+  if (key === 'sortFrameInterval' && (value === null || value === 1))
+    return true
 
   return false
 }

@@ -20,13 +20,31 @@ export const cpuSpawn = (
   const endIdx = u.spawnIndexEnd.value as number
   const seed = u.spawnSeed.value as number
 
+  const posStride = cpu.strides.positions
+  const velStride = cpu.strides.velocities
+  const lifetimeStride = cpu.strides.lifetimes
+  const fadeRateStride = cpu.strides.fadeRates
+  const sizeStride = cpu.strides.particleSizes
+  const seedStride = cpu.strides.particleSeeds
+  const rotStride = cpu.strides.particleRotations
+  const colorStartStride = cpu.strides.particleColorStarts
+  const colorEndStride = cpu.strides.particleColorEnds
+
   // Only iterate the spawn range instead of all maxParticles
   const count =
     startIdx < endIdx ? endIdx - startIdx : maxParticles - startIdx + endIdx
 
   for (let j = 0; j < count; j++) {
     const i = (startIdx + j) % maxParticles
-    const i3 = i * 3
+    const posBase = i * posStride
+    const velBase = i * velStride
+    const lifetimeBase = i * lifetimeStride
+    const fadeRateBase = i * fadeRateStride
+    const sizeBase = i * sizeStride
+    const seedBase = i * seedStride
+    const rotBase = i * rotStride
+    const colorStartBase = i * colorStartStride
+    const colorEndBase = i * colorEndStride
     const particleSeed = i + seed
 
     // Random values per particle
@@ -165,15 +183,15 @@ export const cpuSpawn = (
     const spawnX = u.spawnPosition.value.x as number
     const spawnY = u.spawnPosition.value.y as number
     const spawnZ = u.spawnPosition.value.z as number
-    cpu.positions[i3] = spawnX + shapeX
-    cpu.positions[i3 + 1] = spawnY + shapeY
-    cpu.positions[i3 + 2] = spawnZ + shapeZ
+    cpu.positions[posBase] = spawnX + shapeX
+    cpu.positions[posBase + 1] = spawnY + shapeY
+    cpu.positions[posBase + 2] = spawnZ + shapeZ
 
     // Fade rate (needed before velocity calc for attractToCenter)
     const lifetimeMin = u.lifetimeMin.value as number
     const lifetimeMax = u.lifetimeMax.value as number
     const randomFade = lifetimeMin + (lifetimeMax - lifetimeMin) * randFade
-    cpu.fadeRates[i] = randomFade
+    cpu.fadeRates[fadeRateBase] = randomFade
 
     // Velocity
     const useAttractToCenter = (u.attractToCenter.value as number) > 0.5
@@ -240,14 +258,14 @@ export const cpuSpawn = (
       vz = dirZ * randomSpeed
     }
 
-    cpu.velocities[i3] = vx
-    cpu.velocities[i3 + 1] = vy
-    cpu.velocities[i3 + 2] = vz
+    cpu.velocities[velBase] = vx
+    cpu.velocities[velBase + 1] = vy
+    cpu.velocities[velBase + 2] = vz
 
     // Size
     const sizeMin = u.sizeMin.value as number
     const sizeMax = u.sizeMax.value as number
-    cpu.particleSizes[i] = sizeMin + (sizeMax - sizeMin) * randSize
+    cpu.particleSizes[sizeBase] = sizeMin + (sizeMax - sizeMin) * randSize
 
     // Rotation (optional)
     if (cpu.particleRotations) {
@@ -257,10 +275,11 @@ export const cpuSpawn = (
       const rotMaxY = u.rotationMaxY.value as number
       const rotMinZ = u.rotationMinZ.value as number
       const rotMaxZ = u.rotationMaxZ.value as number
-      cpu.particleRotations[i3] = rotMinX + (rotMaxX - rotMinX) * randRotationX
-      cpu.particleRotations[i3 + 1] =
+      cpu.particleRotations[rotBase] =
+        rotMinX + (rotMaxX - rotMinX) * randRotationX
+      cpu.particleRotations[rotBase + 1] =
         rotMinY + (rotMaxY - rotMinY) * randRotationY
-      cpu.particleRotations[i3 + 2] =
+      cpu.particleRotations[rotBase + 2] =
         rotMinZ + (rotMaxZ - rotMinZ) * randRotationZ
     }
 
@@ -272,20 +291,23 @@ export const cpuSpawn = (
       // Select start color
       const startColorIdx = Math.floor(randColorStart * startColorCount)
       const sc = getColor(u, 'colorStart', startColorIdx)
-      cpu.particleColorStarts[i3] = sc[0]
-      cpu.particleColorStarts[i3 + 1] = sc[1]
-      cpu.particleColorStarts[i3 + 2] = sc[2]
+      cpu.particleColorStarts[colorStartBase] = sc[0]
+      cpu.particleColorStarts[colorStartBase + 1] = sc[1]
+      cpu.particleColorStarts[colorStartBase + 2] = sc[2]
 
       // Select end color
       const endColorIdx = Math.floor(randColorEnd * endColorCount)
       const ec = getColor(u, 'colorEnd', endColorIdx)
-      cpu.particleColorEnds[i3] = ec[0]
-      cpu.particleColorEnds[i3 + 1] = ec[1]
-      cpu.particleColorEnds[i3 + 2] = ec[2]
+      cpu.particleColorEnds[colorEndBase] = ec[0]
+      cpu.particleColorEnds[colorEndBase + 1] = ec[1]
+      cpu.particleColorEnds[colorEndBase + 2] = ec[2]
     }
 
     // Lifetime = 1 (full life)
-    cpu.lifetimes[i] = 1
+    cpu.lifetimes[lifetimeBase] = 1
+
+    // Store stable seed for sort-invariant hashing
+    if (cpu.particleSeeds) cpu.particleSeeds[seedBase] = particleSeed
   }
 }
 

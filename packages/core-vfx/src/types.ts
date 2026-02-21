@@ -68,18 +68,35 @@ export type TrailData = {
   index: unknown // uint: instanceIndex
 }
 
+// Trail opacity data exposed to opacity callback
+export type TrailOpacityData = {
+  alpha: unknown // float: current alpha value
+  trailProgress: unknown // float: 0 (head) → 1 (tail)
+  side: unknown // float: -1 or 1 (which side of the line)
+  // Particle data
+  progress: unknown // float: particle lifetime progress 0→1
+  lifetime: unknown // float: remaining lifetime
+  position: unknown // vec3: particle position
+  velocity: unknown // vec3: particle velocity
+  size: unknown // float: particle size
+  colorStart?: unknown // vec3: per-particle start color (if enabled)
+  colorEnd?: unknown // vec3: per-particle end color (if enabled)
+  particleColor: unknown // vec3: resolved particle color (mix of start→end)
+  index: unknown // uint: instanceIndex
+}
+
 // Trail configuration
 export type TrailConfig = {
   /** Number of trail segments / line resolution (default: 32) */
   segments?: number
   /** Trail line width (default: 0.1) */
   width?: number
-  /** Whether width tapers to 0 at tail (default: true) */
-  taper?: boolean
-  /** Trail opacity (default: 1) */
-  opacity?: number
-  /** Trail computation mode (default: 'procedural') */
-  mode?: 'procedural' | 'history'
+  /** Width taper control. true = default linear taper (1-t), false = no taper,
+   *  or a custom function (t: 0=head, 1=tail) => width multiplier (default: true) */
+  taper?: boolean | ((t: number) => number)
+  /** Trail opacity: number for global opacity, or a TSL callback for per-vertex control.
+   *  Callback receives { alpha, trailProgress, side } plus particle data. (default: 1) */
+  opacity?: number | ((data: TrailOpacityData) => unknown)
   /** Trail length in seconds of history (default: 0.5) */
   length?: number
   /** Show particles alongside trails (default: true) */
@@ -106,6 +123,37 @@ export type StretchConfig = {
   factor: number
   maxStretch: number
 } | null
+
+// Geometry material parameters for STANDARD/PHYSICAL lighting
+export type LightingParams = {
+  roughness?: number
+  metalness?: number
+  emissive?: string
+  emissiveIntensity?: number
+  envMapIntensity?: number
+  clearcoat?: number
+  clearcoatRoughness?: number
+  transmission?: number
+  thickness?: number
+  ior?: number
+  iridescence?: number
+  iridescenceIOR?: number
+} | null
+
+export type ResolvedLightingParams = {
+  roughness: number
+  metalness: number
+  emissive: string
+  emissiveIntensity: number
+  envMapIntensity: number
+  clearcoat: number
+  clearcoatRoughness: number
+  transmission: number
+  thickness: number
+  ior: number
+  iridescence: number
+  iridescenceIOR: number
+}
 
 // Normalized particle props - all shorthand/optional values resolved to canonical form
 export type NormalizedParticleProps = {
@@ -154,8 +202,10 @@ export type NormalizedParticleProps = {
   orientAxis: string
   stretchBySpeed: StretchConfig
   lighting: string
+  lightingParams: ResolvedLightingParams
   shadow: boolean
   blending: THREE.Blending
+  side: THREE.Side
   depthTest: boolean
   renderOrder: number
   colorStart: string[]
@@ -179,6 +229,12 @@ export type VFXParticleSystemOptions = BaseParticleProps & {
   /** TSL node or function for backdrop sampling */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   backdropNode?: any | ((data: ParticleData) => any) | null
+  /** TSL node or function to deform geometry-mode vertex positions */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  geometryNode?:
+    | any
+    | ((data: ParticleData, defaultPosition: any) => any)
+    | null
   /** TSL node or function for custom opacity */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   opacityNode?: any | ((data: ParticleData) => any) | null
@@ -271,10 +327,14 @@ export type BaseParticleProps = {
   stretchBySpeed?: StretchConfig
   /** Material lighting type for geometry mode */
   lighting?: (typeof Lighting)[keyof typeof Lighting]
+  /** Material parameters for STANDARD/PHYSICAL lighting */
+  lightingParams?: LightingParams
   /** Enable shadows on geometry instances */
   shadow?: boolean
   /** Blending mode */
   blending?: THREE.Blending
+  /** Side rendering mode (front, back, double) */
+  side?: THREE.Side
   /** Color intensity multiplier */
   intensity?: number
   /** Emitter position [x, y, z] */
@@ -313,4 +373,8 @@ export type BaseParticleProps = {
   collision?: CollisionConfig
   /** Trail rendering via makio-meshline */
   trail?: TrailConfig
+  /** Enable back-to-front particle sorting (GPU bitonic on WebGPU, CPU radix on WebGL) */
+  sortParticles?: boolean
+  /** GPU sort throttle: run sort every N frames on WebGPU (1 = every frame, null/undefined = auto) */
+  sortFrameInterval?: number | null
 }

@@ -50,11 +50,12 @@ export const Boom = () => {
   }
 
   let t = 0
-  let shouldEmit = false
 
   const gravity = -9.8
   const upSpeed = 6
   const outSpeed = 3
+  const emitDuration = 1.5
+  const resetDuration = 2
   const vectors = Array(5)
     .fill(null)
     .map(() => new Vector3())
@@ -72,24 +73,28 @@ export const Boom = () => {
   useFrame((_, delta) => {
     t += delta
 
-    for (let i = 0; i < 5; i++) {
-      velocities[i].y += gravity * delta
-      vectors[i].addScaledVector(velocities[i], delta)
+    if (t <= emitDuration) {
+      for (let i = 0; i < 5; i++) {
+        velocities[i].y += gravity * delta
+        vectors[i].addScaledVector(velocities[i], delta)
 
-      emit(vectors[i].toArray(), 1, {
-        emitterShape: 2,
-        emitterRadius: [0, 0],
-        size: [0.1, 0.3],
-        speed: [1.2, 1.2],
-      })
+        emit(vectors[i].toArray(), 1, {
+          emitterShape: 2,
+          emitterRadius: [0, 0],
+          lifetime: [0.8, 0.8],
+          size: [0.1 * (1 - t / emitDuration), 0.3 * (1 - t / emitDuration)],
+          speed: [1.2, 1.2],
+        })
+      }
     }
 
-    if (t > 2) {
-      emit([0, -0.5, 0], 100, {
+    if (t > resetDuration) {
+      emit([0, -0.5, 0], 30, {
         emitterShape: 4,
         emitterRadius: [0, 0.01],
         size: [0.3, 0.4],
-        speed: [1.2, 1.2],
+        lifetime: [1.5, 1.6],
+        speed: [1.6, 1.6],
       })
       emit([0, 0, 0], 100)
       for (let i = 0; i < 5; i++) {
@@ -106,7 +111,8 @@ export const Boom = () => {
   })
   return (
     <VFXParticles
-      fallback={<FallbackSprite />}
+      sortParticles
+      // debug
       autoStart={false}
       name="boom"
       curveTexturePath={'./boom-2.bin'}
@@ -115,6 +121,7 @@ export const Boom = () => {
       size={[0.52, 0.86]}
       speed={[0.6, 0.6]}
       lifetime={[2, 2.5]}
+      gravity={[0, 0.5, 0]}
       startPositionAsDirection={true}
       rotation={[
         [0, 0],
@@ -129,6 +136,7 @@ export const Boom = () => {
       appearance="default"
       lighting="basic"
       // blending={Blending.ADDITIVE}
+      // blending={}
       emitterShape={2}
       emitterRadius={[0, 0.21]}
       colorNode={({ progress }) => colorNode(progress)}

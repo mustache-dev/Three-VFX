@@ -13,10 +13,16 @@ export { selectColor } from './helpers'
 export { createInitCompute } from './init'
 export { createSpawnCompute } from './spawn'
 export { createUpdateCompute } from './update'
+export {
+  createSortInitCompute,
+  createDistanceCompute,
+  createSortStepCompute,
+  createGatherCompute,
+  createCopyCompute,
+} from './sort'
 
 // Trail shader factories
 export {
-  createTrailProceduralPositionNode,
   createTrailHistoryCompute,
   createTrailHistoryPositionNode,
 } from './trail'

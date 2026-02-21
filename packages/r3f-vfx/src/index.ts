@@ -2,6 +2,7 @@ export {
   VFXParticles,
   Appearance,
   Blending,
+  Side,
   EmitterShape,
   AttractorType,
   Easing,

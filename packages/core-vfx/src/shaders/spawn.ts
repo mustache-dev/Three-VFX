@@ -47,6 +47,7 @@ export const createSpawnCompute = (
       const lifetime = storage.lifetimes.element(instanceIndex)
       const fadeRate = storage.fadeRates.element(instanceIndex)
       const particleSize = storage.particleSizes.element(instanceIndex)
+      const storedSeed = storage.particleSeeds?.element(instanceIndex)
       // Optional arrays (null when feature unused)
       const particleRotation = storage.particleRotations?.element(instanceIndex)
       const pColorStart = storage.particleColorStarts?.element(instanceIndex)
@@ -330,6 +331,11 @@ export const createSpawnCompute = (
       }
 
       lifetime.assign(float(1))
+
+      // Store stable seed for sort-invariant hashing (e.g. rotation speed)
+      if (storedSeed) {
+        storedSeed.assign(particleSeed)
+      }
     })
   })().compute(maxParticles)
 }

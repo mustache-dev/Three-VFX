@@ -32,6 +32,14 @@ export const cpuUpdate = (
   const frictionIntensityStart = u.frictionIntensityStart.value as number
   const frictionIntensityEnd = u.frictionIntensityEnd.value as number
 
+  const posStride = cpu.strides.positions
+  const velStride = cpu.strides.velocities
+  const lifetimeStride = cpu.strides.lifetimes
+  const fadeRateStride = cpu.strides.fadeRates
+  const sizeStride = cpu.strides.particleSizes
+  const seedStride = cpu.strides.particleSeeds
+  const rotStride = cpu.strides.particleRotations
+
   // Turbulence uniforms (read once)
   const hasTurbulence = features.turbulence !== false
   const turbIntensity = hasTurbulence
@@ -102,20 +110,26 @@ export const cpuUpdate = (
   }
 
   for (let i = 0; i < maxParticles; i++) {
-    const lifetime = cpu.lifetimes[i]
+    const lifetimeBase = i * lifetimeStride
+    const fadeRateBase = i * fadeRateStride
+    const sizeBase = i * sizeStride
+    const seedBase = i * seedStride
+    const lifetime = cpu.lifetimes[lifetimeBase]
     if (lifetime <= 0) continue
 
-    const i3 = i * 3
+    const posBase = i * posStride
+    const velBase = i * velStride
+    const rotBase = i * rotStride
 
-    let px = cpu.positions[i3]
-    let py = cpu.positions[i3 + 1]
-    let pz = cpu.positions[i3 + 2]
+    let px = cpu.positions[posBase]
+    let py = cpu.positions[posBase + 1]
+    let pz = cpu.positions[posBase + 2]
 
-    let vx = cpu.velocities[i3]
-    let vy = cpu.velocities[i3 + 1]
-    let vz = cpu.velocities[i3 + 2]
+    let vx = cpu.velocities[velBase]
+    let vy = cpu.velocities[velBase + 1]
+    let vz = cpu.velocities[velBase + 2]
 
-    const particleSize = cpu.particleSizes[i]
+    const particleSize = cpu.particleSizes[sizeBase]
 
     // Gravity (with size-based multiplier)
     const gravMult = 1 + particleSize * sizeBasedGravity
@@ -223,13 +237,13 @@ export const cpuUpdate = (
     // Collision
     if (collisionEnabled && py < collisionPlaneY) {
       if (collisionDie) {
-        cpu.lifetimes[i] = 0
-        cpu.positions[i3 + 1] = -1000
-        cpu.velocities[i3] = vx
-        cpu.velocities[i3 + 1] = vy
-        cpu.velocities[i3 + 2] = vz
-        cpu.positions[i3] = px
-        cpu.positions[i3 + 2] = pz
+        cpu.lifetimes[lifetimeBase] = 0
+        cpu.positions[posBase + 1] = -1000
+        cpu.velocities[velBase] = vx
+        cpu.velocities[velBase + 1] = vy
+        cpu.velocities[velBase + 2] = vz
+        cpu.positions[posBase] = px
+        cpu.positions[posBase + 2] = pz
         continue
       } else {
         py = collisionPlaneY
@@ -241,12 +255,13 @@ export const cpuUpdate = (
 
     // Rotation
     if (hasRotation && cpu.particleRotations) {
+      const seed = cpu.particleSeeds ? cpu.particleSeeds[seedBase] : i
       const rotSpeedX =
-        rotSpeedMinX + (rotSpeedMaxX - rotSpeedMinX) * hash(i + 8888)
+        rotSpeedMinX + (rotSpeedMaxX - rotSpeedMinX) * hash(seed + 8888)
       const rotSpeedY =
-        rotSpeedMinY + (rotSpeedMaxY - rotSpeedMinY) * hash(i + 9999)
+        rotSpeedMinY + (rotSpeedMaxY - rotSpeedMinY) * hash(seed + 9999)
       const rotSpeedZ =
-        rotSpeedMinZ + (rotSpeedMaxZ - rotSpeedMinZ) * hash(i + 10101)
+        rotSpeedMinZ + (rotSpeedMaxZ - rotSpeedMinZ) * hash(seed + 10101)
 
       let rotSpeedMult = 1
       if (rotSpeedCurveEnabled) {
@@ -254,28 +269,28 @@ export const cpuUpdate = (
         rotSpeedMult = sample.a // A channel = rotation speed curve
       }
 
-      cpu.particleRotations[i3] += rotSpeedX * dt * rotSpeedMult
-      cpu.particleRotations[i3 + 1] += rotSpeedY * dt * rotSpeedMult
-      cpu.particleRotations[i3 + 2] += rotSpeedZ * dt * rotSpeedMult
+      cpu.particleRotations[rotBase] += rotSpeedX * dt * rotSpeedMult
+      cpu.particleRotations[rotBase + 1] += rotSpeedY * dt * rotSpeedMult
+      cpu.particleRotations[rotBase + 2] += rotSpeedZ * dt * rotSpeedMult
     }
 
     // Write back position and velocity
-    cpu.positions[i3] = px
-    cpu.positions[i3 + 1] = py
-    cpu.positions[i3 + 2] = pz
-    cpu.velocities[i3] = vx
-    cpu.velocities[i3 + 1] = vy
-    cpu.velocities[i3 + 2] = vz
+    cpu.positions[posBase] = px
+    cpu.positions[posBase + 1] = py
+    cpu.positions[posBase + 2] = pz
+    cpu.velocities[velBase] = vx
+    cpu.velocities[velBase + 1] = vy
+    cpu.velocities[velBase + 2] = vz
 
     // Lifetime decay: fadeRate is per-second
-    const fadeRate = cpu.fadeRates[i]
+    const fadeRate = cpu.fadeRates[fadeRateBase]
     const newLifetime = lifetime - fadeRate * dt
 
     if (newLifetime <= 0) {
-      cpu.lifetimes[i] = 0
-      cpu.positions[i3 + 1] = -1000
+      cpu.lifetimes[lifetimeBase] = 0
+      cpu.positions[posBase + 1] = -1000
     } else {
-      cpu.lifetimes[i] = newLifetime
+      cpu.lifetimes[lifetimeBase] = newLifetime
     }
   }
 }

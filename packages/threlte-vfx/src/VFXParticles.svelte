@@ -54,6 +54,7 @@ let {
   orientAxis = 'z',
   stretchBySpeed = null,
   lighting = Lighting.STANDARD,
+  lightingParams = null,
   shadow = false,
   blending = Blending.NORMAL,
   intensity = 1,
@@ -61,6 +62,7 @@ let {
   autoStart = true,
   delay = 0,
   backdropNode = null,
+  geometryNode = null,
   opacityNode = null,
   colorNode = null,
   alphaTestNode = null,
@@ -79,6 +81,8 @@ let {
   softParticles = false,
   softDistance = 0.5,
   collision = null,
+  sortParticles = false,
+  sortFrameInterval = null,
   curveTexturePath = null,
   depthTest = true,
   renderOrder = 0,
@@ -111,6 +115,7 @@ let {
   orientAxis?: string
   stretchBySpeed?: StretchConfig | null
   lighting?: string | number
+  lightingParams?: VFXParticleSystemOptions['lightingParams']
   shadow?: boolean
   blending?: string | number
   intensity?: number
@@ -118,6 +123,7 @@ let {
   autoStart?: boolean
   delay?: number
   backdropNode?: unknown
+  geometryNode?: unknown
   opacityNode?: unknown
   colorNode?: unknown
   alphaTestNode?: unknown
@@ -136,12 +142,15 @@ let {
   softParticles?: boolean
   softDistance?: number
   collision?: CollisionConfig | null
+  sortParticles?: boolean
+  sortFrameInterval?: number | null
   curveTexturePath?: string | null
   depthTest?: boolean
   renderOrder?: number
 } = $props()
 
-const { renderer } = useThrelte()
+const threlteCtx = useThrelte() as any
+const { renderer } = threlteCtx
 
 let mounted = false
 
@@ -173,6 +182,7 @@ let activeAttractors = $state(
   attractors !== null && (attractors?.length ?? 0) > 0
 )
 let activeCollision = $state(collision !== null)
+let activeLightingParamsKey = $state(JSON.stringify(lightingParams ?? null))
 let activeNeedsPerParticleColor = $state(
   colorStart.length > 1 || colorEnd !== null
 )
@@ -216,6 +226,7 @@ function buildOptions(): VFXParticleSystemOptions {
     orientAxis: (dbg?.orientAxis ?? orientAxis) as string,
     stretchBySpeed: (dbg?.stretchBySpeed ?? stretchBySpeed) as StretchConfig | null,
     lighting: untrack(() => activeLighting) as VFXParticleSystemOptions['lighting'],
+    lightingParams: lightingParams as VFXParticleSystemOptions['lightingParams'],
     shadow: untrack(() => activeShadow) as boolean,
     blending: (dbg?.blending ?? blending) as VFXParticleSystemOptions['blending'],
     intensity: (dbg?.intensity ?? intensity) as number,
@@ -236,7 +247,13 @@ function buildOptions(): VFXParticleSystemOptions {
     softParticles: (dbg?.softParticles ?? softParticles) as boolean,
     softDistance: (dbg?.softDistance ?? softDistance) as number,
     collision: (dbg?.collision ?? collision) as CollisionConfig | null,
+    sortParticles: (dbg?.sortParticles ?? sortParticles) as boolean,
+    sortFrameInterval:
+      dbg?.sortFrameInterval !== undefined
+        ? (dbg.sortFrameInterval as number | null)
+        : (sortFrameInterval as number | null),
     backdropNode: backdropNode as VFXParticleSystemOptions['backdropNode'],
+    geometryNode: geometryNode as VFXParticleSystemOptions['geometryNode'],
     opacityNode: opacityNode as VFXParticleSystemOptions['opacityNode'],
     colorNode: colorNode as VFXParticleSystemOptions['colorNode'],
     alphaTestNode: alphaTestNode as VFXParticleSystemOptions['alphaTestNode'],
@@ -386,6 +403,12 @@ function handleDebugUpdate(newValues: Record<string, unknown>) {
   if ('delay' in newValues) _system.setDelay((newValues.delay as number) ?? 0)
   if ('emitCount' in newValues)
     _system.setEmitCount((newValues.emitCount as number) ?? 1)
+  if ('sortParticles' in newValues)
+    _system.setSortEnabled(!!newValues.sortParticles)
+  if ('sortFrameInterval' in newValues)
+    _system.setSortFrameInterval(
+      (newValues.sortFrameInterval as number | null | undefined) ?? null
+    )
 
   if (newValues.autoStart !== undefined) {
     _emitting = newValues.autoStart as boolean
@@ -519,6 +542,8 @@ function initDebugPanel() {
         softParticles,
         softDistance,
         collision,
+        sortParticles,
+        sortFrameInterval,
         ...detectGeometryTypeAndArgs(geometry),
       }
 
@@ -552,6 +577,7 @@ $effect(() => {
     turbulence,
     attractors,
     collision,
+    lightingParams,
   ]
 
   if (debug) return
@@ -578,6 +604,7 @@ $effect(() => {
     activeAttractors =
       attractors !== null && (attractors?.length ?? 0) > 0
     activeCollision = collision !== null
+    activeLightingParamsKey = JSON.stringify(lightingParams ?? null)
   })
 })
 
@@ -600,6 +627,7 @@ $effect(() => {
     activeFadeOpacityCurve,
     activeVelocityCurve,
     activeRotationSpeedCurve,
+    activeLightingParamsKey,
   ]
 
   if (!mounted) return
@@ -646,6 +674,8 @@ $effect(() => {
     stretchBySpeed,
     delay,
     emitCount,
+    sortParticles,
+    sortFrameInterval,
   ]
 
   if (debug) return
@@ -657,6 +687,8 @@ $effect(() => {
     _system.setDelay(delay)
     _system.setEmitCount(emitCount)
     _system.setTurbulenceSpeed(turbulence?.speed ?? 1)
+    _system.setSortEnabled(sortParticles)
+    _system.setSortFrameInterval(sortFrameInterval)
 
     const normalized = normalizeProps({
       size,
@@ -696,7 +728,16 @@ $effect(() => {
 // Frame loop
 useTask((delta) => {
   if (!_system || !_system.initialized) return
-  _system.update(delta)
+  const cam =
+    threlteCtx.camera?.current ??
+    threlteCtx.camera?.value ??
+    threlteCtx.camera ??
+    null
+  const pos = cam?.position
+  if (pos) {
+    _system.setCameraPosition([pos.x, pos.y, pos.z])
+  }
+  void _system.update(delta)
   if (_emitting) {
     _system.autoEmit(delta)
   }

@@ -1,5 +1,6 @@
 import type * as THREE from 'three/webgpu'
 import type { Node, StorageBufferNode } from 'three/webgpu'
+import type { ResolvedLightingParams } from '../types'
 
 // Storage arrays for particle data (uses StorageBufferNode for proper .toAttribute() typing)
 // Optional arrays are null when feature is unused (saves GPU memory):
@@ -11,6 +12,7 @@ export type ParticleStorageArrays = {
   lifetimes: StorageBufferNode
   fadeRates: StorageBufferNode
   particleSizes: StorageBufferNode
+  particleSeeds: StorageBufferNode | null
   particleRotations: StorageBufferNode | null
   particleColorStarts: StorageBufferNode | null
   particleColorEnds: StorageBufferNode | null
@@ -42,12 +44,18 @@ export type MaterialOptions = {
   flipbook: { rows: number; columns: number } | null
   appearance: string
   lighting: string
+  lightingParams: ResolvedLightingParams
   softParticles: boolean
   geometry: THREE.BufferGeometry | null
   orientToDirection: boolean
   shadow: boolean
   blending: THREE.Blending
+  side: THREE.Side
   // Custom nodes
+  geometryNode:
+    | Node
+    | ((data: Record<string, Node>, defaultPosition: Node) => Node)
+    | null
   opacityNode: Node | ((data: Record<string, Node>) => Node) | null
   colorNode:
     | Node
@@ -56,4 +64,6 @@ export type MaterialOptions = {
   backdropNode: Node | ((data: Record<string, Node>) => Node) | null
   alphaTestNode: Node | ((data: Record<string, Node>) => Node) | null
   castShadowNode: Node | ((data: Record<string, Node>) => Node) | null
+  // Optional indirection index buffer for sorted rendering
+  renderOrderIndices?: StorageBufferNode | null
 }

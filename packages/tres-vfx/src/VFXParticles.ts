@@ -139,6 +139,10 @@ export const VFXParticles = defineComponent({
       type: null as unknown as PropType<string | number>,
       default: Lighting.STANDARD,
     },
+    lightingParams: {
+      type: Object as PropType<VFXParticleSystemOptions['lightingParams']>,
+      default: null,
+    },
     shadow: { type: Boolean, default: false },
     blending: {
       type: null as unknown as PropType<string | number>,
@@ -152,6 +156,7 @@ export const VFXParticles = defineComponent({
     autoStart: { type: Boolean, default: true },
     delay: { type: Number, default: 0 },
     backdropNode: { type: null as unknown as PropType<unknown>, default: null },
+    geometryNode: { type: null as unknown as PropType<unknown>, default: null },
     opacityNode: { type: null as unknown as PropType<unknown>, default: null },
     colorNode: { type: null as unknown as PropType<unknown>, default: null },
     alphaTestNode: {
@@ -197,6 +202,11 @@ export const VFXParticles = defineComponent({
       type: Object as PropType<CollisionConfig | null>,
       default: null,
     },
+    sortParticles: { type: Boolean, default: false },
+    sortFrameInterval: {
+      type: null as unknown as PropType<number | null>,
+      default: null,
+    },
     curveTexturePath: {
       type: null as unknown as PropType<string | null>,
       default: null,
@@ -205,7 +215,8 @@ export const VFXParticles = defineComponent({
     renderOrder: { type: Number, default: 0 },
   },
   setup(props, { expose }) {
-    const { renderer: rendererCtx } = useTresContext()
+    const tresCtx = useTresContext() as any
+    const rendererCtx = tresCtx.renderer
     const { onBeforeRender } = useLoop()
 
     const systemRef = shallowRef<VFXParticleSystem | null>(null)
@@ -231,6 +242,7 @@ export const VFXParticles = defineComponent({
       props.attractors !== null && (props.attractors?.length ?? 0) > 0
     )
     const activeCollision = ref(props.collision !== null)
+    const activeLightingParamsKey = ref(JSON.stringify(props.lightingParams ?? null))
     const activeNeedsPerParticleColor = ref(
       props.colorStart.length > 1 || props.colorEnd !== null
     )
@@ -287,6 +299,8 @@ export const VFXParticles = defineComponent({
         stretchBySpeed: (dbg?.stretchBySpeed ??
           props.stretchBySpeed) as StretchConfig | null,
         lighting: activeLighting.value as VFXParticleSystemOptions['lighting'],
+        lightingParams:
+          props.lightingParams as VFXParticleSystemOptions['lightingParams'],
         shadow: activeShadow.value as boolean,
         blending: (dbg?.blending ??
           props.blending) as VFXParticleSystemOptions['blending'],
@@ -326,8 +340,15 @@ export const VFXParticles = defineComponent({
         softDistance: (dbg?.softDistance ?? props.softDistance) as number,
         collision: (dbg?.collision ??
           props.collision) as CollisionConfig | null,
+        sortParticles: (dbg?.sortParticles ?? props.sortParticles) as boolean,
+        sortFrameInterval:
+          dbg?.sortFrameInterval !== undefined
+            ? (dbg.sortFrameInterval as number | null)
+            : (props.sortFrameInterval as number | null),
         backdropNode:
           props.backdropNode as VFXParticleSystemOptions['backdropNode'],
+        geometryNode:
+          props.geometryNode as VFXParticleSystemOptions['geometryNode'],
         opacityNode:
           props.opacityNode as VFXParticleSystemOptions['opacityNode'],
         colorNode: props.colorNode as VFXParticleSystemOptions['colorNode'],
@@ -501,6 +522,12 @@ export const VFXParticles = defineComponent({
         system.setDelay((newValues.delay as number) ?? 0)
       if ('emitCount' in newValues)
         system.setEmitCount((newValues.emitCount as number) ?? 1)
+      if ('sortParticles' in newValues)
+        system.setSortEnabled(!!newValues.sortParticles)
+      if ('sortFrameInterval' in newValues)
+        system.setSortFrameInterval(
+          (newValues.sortFrameInterval as number | null | undefined) ?? null
+        )
 
       if (newValues.autoStart !== undefined) {
         emitting.value = newValues.autoStart as boolean
@@ -637,6 +664,8 @@ export const VFXParticles = defineComponent({
             softParticles: props.softParticles,
             softDistance: props.softDistance,
             collision: props.collision,
+            sortParticles: props.sortParticles,
+            sortFrameInterval: props.sortFrameInterval,
             ...detectGeometryTypeAndArgs(props.geometry),
           }
 
@@ -669,6 +698,7 @@ export const VFXParticles = defineComponent({
         props.turbulence,
         props.attractors,
         props.collision,
+        props.lightingParams,
       ],
       () => {
         if (props.debug) return
@@ -693,6 +723,7 @@ export const VFXParticles = defineComponent({
         activeAttractors.value =
           props.attractors !== null && (props.attractors?.length ?? 0) > 0
         activeCollision.value = props.collision !== null
+        activeLightingParamsKey.value = JSON.stringify(props.lightingParams ?? null)
       }
     )
 
@@ -714,6 +745,7 @@ export const VFXParticles = defineComponent({
         activeFadeOpacityCurve,
         activeVelocityCurve,
         activeRotationSpeedCurve,
+        activeLightingParamsKey,
       ],
       () => {
         initSystem()
@@ -755,6 +787,8 @@ export const VFXParticles = defineComponent({
         props.stretchBySpeed,
         props.delay,
         props.emitCount,
+        props.sortParticles,
+        props.sortFrameInterval,
       ],
       () => {
         if (props.debug) return
@@ -765,6 +799,8 @@ export const VFXParticles = defineComponent({
         system.setDelay(props.delay)
         system.setEmitCount(props.emitCount)
         system.setTurbulenceSpeed(props.turbulence?.speed ?? 1)
+        system.setSortFrameInterval(props.sortFrameInterval)
+        system.setSortEnabled(props.sortParticles)
 
         const normalized = normalizeProps({
           size: props.size,
@@ -803,11 +839,19 @@ export const VFXParticles = defineComponent({
     )
 
     // Frame loop
-    onBeforeRender(({ delta }) => {
+    onBeforeRender((frame: any) => {
       const system = systemRef.value
       if (!system || !system.initialized) return
 
-      system.update(delta)
+      const delta = frame?.delta ?? 0
+      const cam =
+        frame?.camera ?? tresCtx.camera?.value ?? tresCtx.camera ?? null
+      const pos = cam?.position
+      if (pos) {
+        system.setCameraPosition([pos.x, pos.y, pos.z])
+      }
+
+      void system.update(delta)
 
       if (emitting.value) {
         system.autoEmit(delta)
