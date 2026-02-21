@@ -1,5 +1,11 @@
 # core-vfx
 
+## 0.4.0
+
+### Minor Changes
+
+- 4fa18c9: Geometry node, trail fix, trail function width/opacity, light params
+
 ## 0.3.0
 
 ### Minor Changes
