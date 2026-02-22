@@ -1,7 +1,9 @@
 import {
   Fn,
   If,
+  Loop,
   float,
+  int,
   vec3,
   hash,
   mix,
@@ -25,7 +27,8 @@ import { selectColor } from './helpers'
 export const createSpawnCompute = (
   storage: ParticleStorageArrays,
   uniforms: ParticleUniforms,
-  maxParticles: number
+  maxParticles: number,
+  trailSegments = 0
 ) => {
   return Fn(() => {
     const idx = float(instanceIndex)
@@ -331,6 +334,15 @@ export const createSpawnCompute = (
       }
 
       lifetime.assign(float(1))
+
+      // Fill trail history ring buffer with spawn position to clear stale data
+      // from the previous particle that occupied this pool slot.
+      if (storage.trailHistory && trailSegments > 0) {
+        const baseIdx = instanceIndex.mul(trailSegments)
+        Loop(int(trailSegments), ({ i }) => {
+          storage.trailHistory!.element(baseIdx.add(i)).assign(position)
+        })
+      }
 
       // Store stable seed for sort-invariant hashing (e.g. rotation speed)
       if (storedSeed) {

@@ -78,7 +78,8 @@ export default function App() {
           {/* <Boom />*/}
           <VFXParticles
             debug
-            delay={0.23}
+            maxParticles={100}
+            delay={0}
             gravity={[0, -12.6, 0]}
             speed={[6.83, 6.83]}
             direction={[

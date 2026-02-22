@@ -247,7 +247,8 @@ export class VFXParticleSystem {
       this.computeSpawn = createSpawnCompute(
         this.storage,
         this.uniforms,
-        np.maxParticles
+        np.maxParticles,
+        this.trailSegments
       )
       this.computeUpdate = createUpdateCompute(
         this.storage,
