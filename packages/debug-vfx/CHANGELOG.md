@@ -1,5 +1,16 @@
 # debug-vfx
 
+## 0.5.0
+
+### Minor Changes
+
+- fef47de: trail fix
+
+### Patch Changes
+
+- Updated dependencies [fef47de]
+  - core-vfx@0.5.0
+
 ## 0.4.0
 
 ### Minor Changes

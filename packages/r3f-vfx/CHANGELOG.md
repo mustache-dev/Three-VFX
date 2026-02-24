@@ -1,5 +1,17 @@
 # r3f-vfx
 
+## 0.6.0
+
+### Minor Changes
+
+- fef47de: trail fix
+
+### Patch Changes
+
+- Updated dependencies [fef47de]
+  - core-vfx@0.5.0
+  - debug-vfx@0.5.0
+
 ## 0.5.0
 
 ### Minor Changes

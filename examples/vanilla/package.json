@@ -7,7 +7,7 @@
     "start": "vite preview --host"
   },
   "dependencies": {
-    "vanilla-vfx": "0.5.0",
+    "vanilla-vfx": "0.6.0",
     "three": "0.182.0"
   },
   "devDependencies": {

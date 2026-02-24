@@ -1,6 +1,6 @@
 {
   "name": "threlte-vfx",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "license": "MIT",
   "type": "module",
   "svelte": "./dist/index.js",
@@ -34,8 +34,8 @@
     "prepublishOnly": "bun run typecheck && bun run build && bun run copy-readme"
   },
   "dependencies": {
-    "core-vfx": "0.4.0",
-    "debug-vfx": "0.4.0"
+    "core-vfx": "0.5.0",
+    "debug-vfx": "0.5.0"
   },
   "peerDependencies": {
     "@threlte/core": ">=8.0.0",

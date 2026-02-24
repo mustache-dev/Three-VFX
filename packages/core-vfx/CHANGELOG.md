@@ -1,5 +1,11 @@
 # core-vfx
 
+## 0.5.0
+
+### Minor Changes
+
+- fef47de: trail fix
+
 ## 0.4.0
 
 ### Minor Changes
